@@ -73,7 +73,7 @@ public sealed class AlgorithmSuite
     /// 格式/前缀错误 → 解析类；算法不支持/跨族 → 支持类。两者对外语义均明确。</summary>
     public static AlgorithmSuite Parse(string securityReq)
     {
-        var trimmed = securityReq?.Trim();
+        var trimmed = (securityReq ?? "").Trim();
         if (string.IsNullOrEmpty(trimmed))
         {
             throw new WopException(WopErrorCode.SuiteParse, "securityReq 为空");
