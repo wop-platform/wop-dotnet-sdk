@@ -92,7 +92,7 @@ public sealed class HttpClientTransport : IWopTransport
         HttpResponseMessage response;
         try
         {
-            response = _client.SendAsync(request).GetAwaiter().GetResult();
+            response = _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
         }
         catch (Exception e)
         {

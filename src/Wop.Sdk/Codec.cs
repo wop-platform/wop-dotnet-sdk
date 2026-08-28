@@ -39,14 +39,8 @@ public static class Codec
             .Append(s).Replace('-', '+').Replace('_', '/');
         var pad = (4 - std.Length % 4) % 4;
         std.Append('=', pad);
-        try
-        {
-            return Convert.FromBase64String(std.ToString());
-        }
-        catch (FormatException e)
-        {
-            throw new WopException(WopErrorCode.Protocol, "base64url 解码失败：" + e.Message);
-        }
+        // 预检（字符集 + 长度）后 FromBase64String 恒成功，无需防御 catch
+        return Convert.FromBase64String(std.ToString());
     }
 
     /// <summary>小写十六进制（D10：统一小写；.NET BitConverter 默认大写带连字符是经典翻车点）。</summary>

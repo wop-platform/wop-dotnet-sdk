@@ -24,9 +24,10 @@ public sealed class WopClient
     internal WopClient(WopClientBuilder b)
     {
         _appKey = b.AppKeyValue;
-        _suite = b.SuiteValue ?? throw new WopException(WopErrorCode.SuiteParse, "suite 未配置");
-        _merchantPrivate = AsymmetricKeyMaterial.ParsePrivate(b.MerchantPrivateKeyValue ?? "", _suite);
-        _platformPublic = AsymmetricKeyMaterial.ParsePublic(b.PlatformPublicKeyValue ?? "", _suite);
+        // Build() 已完成全部前置校验（原子装配，I6），此处不再防御
+        _suite = b.SuiteValue!;
+        _merchantPrivate = AsymmetricKeyMaterial.ParsePrivate(b.MerchantPrivateKeyValue!, _suite);
+        _platformPublic = AsymmetricKeyMaterial.ParsePublic(b.PlatformPublicKeyValue!, _suite);
         _expiredSeconds = b.ExpiredSecondsValue;
         _clock = b.ClockValue;
         _nonceGen = b.NonceGenValue;

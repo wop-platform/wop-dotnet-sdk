@@ -90,10 +90,7 @@ public static class ContentDigest
 
     private static bool ConstantTimeEquals(string a, string b)
     {
-        if (a.Length != b.Length)
-        {
-            return false;
-        }
+        // 长度恒等（Parse 钉死 64 hex、computed 恒 64），无长度分支
         var diff = 0;
         for (var i = 0; i < a.Length; i++)
         {

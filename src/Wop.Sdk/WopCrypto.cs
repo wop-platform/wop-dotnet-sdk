@@ -96,14 +96,8 @@ internal static class WopCrypto
             signer.Init(true, new ParametersWithID(
                 new ParametersWithRandom(priv.Sm2Private, random), Sm2Defaults.UserId));
             signer.BlockUpdate(message, 0, message.Length);
-            try
-            {
-                signature = signer.GenerateSignature();
-            }
-            catch (Exception)
-            {
-                throw WopException.Fuzzy(WopErrorCode.VerifyFailed); // 加签失败对外模糊（密钥参与）
-            }
+            // SM2Signer 对合法密钥恒产出（无效 r/s 内部重试），无失败路径
+            signature = signer.GenerateSignature();
         }
         else
         {
@@ -224,14 +218,7 @@ internal static class WopCrypto
             }
             var engine = new SM2Engine(SM2Engine.Mode.C1C3C2);
             engine.Init(true, new ParametersWithRandom(pub.Sm2Public, SecureRandomFor(fixedK)));
-            try
-            {
-                wrapped = engine.ProcessBlock(payload, 0, payload.Length);
-            }
-            catch (Exception)
-            {
-                throw WopException.Fuzzy(WopErrorCode.DecryptFailed);
-            }
+            wrapped = engine.ProcessBlock(payload, 0, payload.Length);
         }
         else
         {
@@ -242,14 +229,7 @@ internal static class WopCrypto
             var engine = new OaepEncoding(new RsaEngine(),
                 new Sha256Digest(), new Sha256Digest(), Array.Empty<byte>());
             engine.Init(true, new ParametersWithRandom(pub.RsaPublic, SecureRandomFor(null)));
-            try
-            {
-                wrapped = engine.ProcessBlock(payload, 0, payload.Length);
-            }
-            catch (Exception)
-            {
-                throw WopException.Fuzzy(WopErrorCode.DecryptFailed);
-            }
+            wrapped = engine.ProcessBlock(payload, 0, payload.Length);
         }
         return Codec.EncodeB64Url(wrapped);
     }

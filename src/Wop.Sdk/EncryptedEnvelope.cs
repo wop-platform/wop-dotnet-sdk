@@ -116,19 +116,24 @@ public static class EncryptedEnvelope
             return after;
         }
         var depth = 0;
-        while (i < s.Length && s[i] != ',')
+        while (i < s.Length)
         {
-            if (s[i] == '{' || s[i] == '[')
+            var c = s[i];
+            if (c == '{' || c == '[')
             {
                 depth++;
             }
-            else if (s[i] == '}' || s[i] == ']')
+            else if (c == '}' || c == ']')
             {
                 if (depth == 0)
                 {
-                    return i;
+                    return i;   // 外层对象边界，不消费
                 }
                 depth--;
+            }
+            else if (c == ',' && depth == 0)
+            {
+                return i;       // 顶层逗号：值结束
             }
             i++;
         }
