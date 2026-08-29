@@ -1,0 +1,3 @@
+# 跨仓字节合同 fixture（spec:interop-v1，sha256 钉死与 wop-specs 真源逐位一致）：
+# 禁止任何行尾/编码转换，防止 Windows autocrlf 检出改写字节导致 sha256 校验失败
+tests/Wop.Sdk.Tests/fixtures/** -text

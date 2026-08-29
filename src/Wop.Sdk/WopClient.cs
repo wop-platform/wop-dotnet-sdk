@@ -91,7 +91,7 @@ public sealed class WopClient
                          _expiredSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var canonical = CanonicalRequest.Build(authString, upperMethod, path, "",
             CanonicalRequest.CanonicalHeaders(headers));
-        var signature = WopCrypto.Sign(_suite, _merchantPrivate, Encoding.UTF8.GetBytes(canonical));
+        var signature = WopCrypto.Sign(_suite, _merchantPrivate, Encoding.UTF8.GetBytes(canonical), random: _random);
         var signedNames = headers.Keys.ToList();
         var signHeader = SignHeader.Build(_suite.SecurityReq, _expiredSeconds, signedNames, signature);
 
@@ -114,7 +114,7 @@ public sealed class WopClient
         var sealedBytes = WopCrypto.SealMessage(_suite, plaintext, cek, iv);
         var wireBody = EncryptedEnvelope.Wrap(Codec.EncodeB64Url(sealedBytes));
         var dekPlain = Encoding.UTF8.GetBytes(DekPayload.Encode(_suite.MessageAlgorithm, cek, iv));
-        var wrapped = WopCrypto.WrapDek(_suite, _platformPublic, dekPlain);
+        var wrapped = WopCrypto.WrapDek(_suite, _platformPublic, dekPlain, random: _random);
         return (wireBody, EncryptHeader.BuildL2(wrapped));
     }
 
@@ -239,7 +239,17 @@ public sealed class WopClient
         }
         var (_, dekB64Url) = EncryptHeader.Parse(encryptHeader);
         var payloadPlain = WopCrypto.UnwrapDek(_suite, _merchantPrivate, dekB64Url);   // I7：模糊
-        var payload = DekPayload.Parse(Encoding.UTF8.GetString(payloadPlain));
+        DekPayload payload;
+        try
+        {
+            payload = DekPayload.Parse(Encoding.UTF8.GetString(payloadPlain));
+        }
+        catch (WopException)
+        {
+            // DEK 载荷结构在解包之后才可见，属密钥参与层；除 alg 族不符（D8 明确，
+            // 由下一判给出）外一律归入解密类模糊（I7 保守默认，interop 合同 n13）
+            throw WopException.Fuzzy(WopErrorCode.DecryptFailed);
+        }
         if (!payload.MatchesSuite(_suite))
         {
             throw new WopException(WopErrorCode.AlgMismatch,
@@ -335,6 +345,14 @@ public sealed class WopClientBuilder
     internal WopClientBuilder WithNonce(Func<string> nonceGen)
     {
         NonceGenValue = nonceGen;
+        return this;
+    }
+
+    /// <summary>固定随机源（联调/测试确定性钩子）：注入后随机流按合同顺序消费
+    /// [CEK][12B IV][OAEP seed / SM2 k…]（wop-specs/interop/v1）。</summary>
+    internal WopClientBuilder WithRandom(SecureRandom random)
+    {
+        RandomValue = random;
         return this;
     }
 
