@@ -12,6 +12,7 @@
     <PackageProjectUrl>https://github.com/wop-platform/wop-dotnet-sdk</PackageProjectUrl>
     <Description>WOP 网关商户侧官方 .NET SDK：协议核心（套件解析/canonicalRequest/结构化签名/content-digest/L2 数字信封/验签解密）+ HttpClient 适配层。RSA3072/4096 与 SM2-SM3 双套件（BouncyCastle.Cryptography）。</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.en.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/wop-platform/wop-dotnet-sdk</RepositoryUrl>
     <PackageTags>wop;gateway;sm2;sm3;sm4;rsa;digital-envelope</PackageTags>
   </PropertyGroup>
@@ -22,6 +23,10 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Wop.Sdk.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.en.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
