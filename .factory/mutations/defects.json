@@ -1,0 +1,123 @@
+{
+  "$schema": "https://awesome-rules.invalid/factory/mutations-v0.json",
+  "description": "S1 缺陷集（wop-dotnet-sdk 本地化）：篡改类（guard 门）+ 行为破坏类 B-1xx（tests 门 scripts/run_tests.sh --no-lock = dotnet build + dotnet test 全量）。行为类 kill 证据 = 注入后 dotnet test 对应测试类变红；负例（expect_block=false）验证门不全拒。证据留档 EVIDENCE-2026-08-29.md。",
+  "defects": [
+    {
+      "id": "G-01",
+      "description": "篡改治理宪法：MISSION.md 铁律降级为可选建议",
+      "target": "MISSION.md",
+      "find": "## 铁律",
+      "replace": "## 铁律（工厂可自行修订）",
+      "gate": "guard",
+      "expect_block": true
+    },
+    {
+      "id": "G-02",
+      "description": "篡改治理面：README.md 标题注入豁免条款",
+      "target": "README.md",
+      "find": "# wop-dotnet-sdk",
+      "replace": "# wop-dotnet-sdk（工厂豁免条款适用）",
+      "gate": "guard",
+      "expect_block": true
+    },
+    {
+      "id": "G-03",
+      "description": "篡改验证门自身：guard.py 周界配置载入改向不存在文件致门 fail-closed（exit 2 应视为拦截）",
+      "target": ".factory/guard.py",
+      "find": "cfg_path = Path(__file__).resolve().parent / \"factory-local.json\"",
+      "replace": "cfg_path = Path(__file__).resolve().parent / \"factory-local-DISABLED.json\"",
+      "gate": "guard",
+      "expect_block": true
+    },
+    {
+      "id": "G-04",
+      "description": "篡改质检线：run_tests.sh 移除 pipefail 削弱真实退出码传播",
+      "target": "scripts/run_tests.sh",
+      "find": "set -euo pipefail",
+      "replace": "set -u",
+      "gate": "guard",
+      "expect_block": true
+    },
+    {
+      "id": "M-01",
+      "description": "周界清单单边漂移：MISSION 增加条目而 guard 副本未同步（self_check 应发现不一致）",
+      "target": "MISSION.md",
+      "find": "`README.md`、`CONTRIBUTING.md`",
+      "replace": "`README.md`、`CONTRIBUTING.md`、`factory-extra/`",
+      "gate": "guard",
+      "expect_block": true
+    },
+    {
+      "id": "M-02",
+      "description": "周界指向不存在路径：MISSION 条目改名为不存在的文件（self_check 一致性/存在性检查应拦截）",
+      "target": "MISSION.md",
+      "find": "`CONTRIBUTING.md`",
+      "replace": "`CONTRIBUTING-RENAMED.md`",
+      "gate": "guard",
+      "expect_block": true
+    },
+    {
+      "id": "B-01",
+      "description": "良性变更负例：交付报告标题追加维护署名，门必须放行（防门全拒）",
+      "target": "docs/wop-sdk-report-dotnet.md",
+      "find": "# wop-dotnet-sdk 交付报告",
+      "replace": "# wop-dotnet-sdk 交付报告（工厂参与维护）",
+      "gate": "guard",
+      "expect_block": false
+    },
+    {
+      "id": "B-101",
+      "description": "行为破坏：HttpClientTransport 响应体上限检查短路——超限响应放行（TransportTests.Send_响应体超上限_拒绝 红）",
+      "target": "src/Wop.Sdk/Transport.cs",
+      "find": "if (body.Length > MaxResponseBytes)",
+      "replace": "if (false && body.Length > MaxResponseBytes)",
+      "gate": "tests",
+      "expect_block": true
+    },
+    {
+      "id": "B-102",
+      "description": "行为破坏：WopException.Fuzzy 模糊文案分支反置——I7 固定文案互换（WopExceptionTests/InvariantsTests 红）",
+      "target": "src/Wop.Sdk/WopException.cs",
+      "find": "code == WopErrorCode.DecryptFailed ? \"解密失败\" : \"签名验证失败\"",
+      "replace": "code == WopErrorCode.VerifyFailed ? \"解密失败\" : \"签名验证失败\"",
+      "gate": "tests",
+      "expect_block": true
+    },
+    {
+      "id": "B-103",
+      "description": "行为破坏：VerifyResult.Fail 错误码丢失——ErrorCode 恒为 null（WopClientTests/ErrorContractTests 错误码断言红）",
+      "target": "src/Wop.Sdk/RequestDraft.cs",
+      "find": "new(false, e.ErrorCode, e.Message, null)",
+      "replace": "new(false, null, e.Message, null)",
+      "gate": "tests",
+      "expect_block": true
+    },
+    {
+      "id": "B-104",
+      "description": "行为破坏：BuildRequest digest 门短路——有 body 不再产 x-wop-content-digest（D2 断言红）",
+      "target": "src/Wop.Sdk/WopClient.cs",
+      "find": "if (wireBody is { Length: > 0 })",
+      "replace": "if (false && wireBody is { Length: > 0 })",
+      "gate": "tests",
+      "expect_block": true
+    },
+    {
+      "id": "B-105",
+      "description": "行为破坏：协议头常量漂移——appKey 头改名致网关无法识别（TransportTests 出站头断言红）",
+      "target": "src/Wop.Sdk/WopHeaders.cs",
+      "find": "public const string AppKey = \"x-wop-appkey\";",
+      "replace": "public const string AppKey = \"x-wop-app-key\";",
+      "gate": "tests",
+      "expect_block": true
+    },
+    {
+      "id": "B-106",
+      "description": "良性变更负例：WopException XML doc 措辞调整（行为等价，全量测试仍绿），tests 门必须放行（防门全拒）",
+      "target": "src/Wop.Sdk/WopException.cs",
+      "find": "/// 验签/解密类错误的 Message 恒为固定模糊文案（I7 纪律）。",
+      "replace": "/// 验签/解密类错误的 Message 恒为固定模糊文案（I7 纪律；负例：仅措辞变更）。",
+      "gate": "tests",
+      "expect_block": false
+    }
+  ]
+}

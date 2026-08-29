@@ -9,3 +9,15 @@ tests/**/coverage/
 
 # Reqnroll 生成代码（.feature.cs 为构建生成物，不入库）
 tests/**/*.feature.cs
+
+# 工厂治理层入库（黑盒工厂：宪法/forge 适配(ADR-008 hosting)/状态机/prompts/guard/tests
+# 纳入 git 管辖；hosting.env 为平台配置（github 默认），随仓共享，令牌不入库。）
+# 不入库：运行时产物与机器态
+.factory/artifacts/
+.factory/locks/
+.factory/worktrees/
+.factory/metrics/
+.factory/var/
+.factory/.pytest_cache/
+.factory/regression/**/out/
+.factory/**/__pycache__/
