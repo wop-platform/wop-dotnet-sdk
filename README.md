@@ -1,5 +1,7 @@
 # wop-dotnet-sdk
 
+[![NuGet](https://img.shields.io/nuget/v/Wop.Sdk.svg)](https://www.nuget.org/packages/Wop.Sdk/)
+
 WOP 网关商户侧官方 .NET SDK：封装协议核心（套件解析、canonicalRequest、结构化签名、
 content-digest、L2 数字信封、验签解密）与 HttpClient 适配层，商户无需理解线上字节格式即可安全对接网关。
 
@@ -90,7 +92,7 @@ VerifyResult c = client.VerifyCallback(callbackUrl, headersFromBody, rawBody);
 
 ```bash
 export PATH="$HOME/.dotnet:$PATH"
-dotnet test /p:CollectCoverage=true /p:Threshold=98 /p:ThresholdType=both
+dotnet test /p:CollectCoverage=true /p:Threshold=98 '/p:ThresholdType="line,branch"'
 ```
 
 覆盖面：
