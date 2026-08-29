@@ -35,7 +35,7 @@ jobs:
 
       - name: Upload package artifact (NUGET_TOKEN 未配置时的手动发布通道)
         if: env.NUGET_TOKEN == ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-package
           path: dist/*.nupkg
