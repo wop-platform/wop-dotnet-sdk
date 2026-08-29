@@ -16,32 +16,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+      - name: Verify (build + tests + coverage gate)
+        uses: ./.github/actions/verify
 
       - name: Derive package version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
-      # ---- 验证段：与 ci.yml 逐字同命令，测试全绿才允许进入发布段 ----
-      # 注意：不可用 --no-build（coverlet 插桩在 build 阶段注入）；
-      # ThresholdType 只认 line/branch/method（逗号分隔，值需内层引号防 MSBuild 逗号分词）
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build (zero warnings tolerated)
-        run: dotnet build --no-restore -warnaserror
-
-      - name: Test + coverage gate (line & branch >= 98%, vector conformance)
-        run: >
-          dotnet test --no-restore
-          /p:CollectCoverage=true
-          /p:Threshold=98
-          '/p:ThresholdType="line,branch"'
-          /p:CoverletOutputFormat=opencover
-
-      # ---- 发布段：pack 自动完成 Release 构建，包版本取自 tag ----
+      # 发布段：pack 自动完成 Release 构建，包版本取自 tag
       - name: Pack (Release, version = tag)
         run: dotnet pack src/Wop.Sdk/Wop.Sdk.csproj -c Release -o dist /p:Version="$VERSION"
 

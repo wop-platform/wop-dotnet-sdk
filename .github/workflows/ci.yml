@@ -6,7 +6,7 @@ on:
   pull_request:
 
 # GITHUB_TOKEN 最小权限（actions/missing-workflow-permissions）：
-# 本流水线仅读代码与上传 artifact，无 GitHub 侧写操作
+# 本流水线仅读代码，无 GitHub 侧写操作
 permissions:
   contents: read
 
@@ -16,23 +16,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build (zero warnings tolerated)
-        run: dotnet build --no-restore -warnaserror
-
-      # coverlet.msbuild 的插桩在 build 阶段注入：禁止 --no-build（会采不到数据）；
-      # ThresholdType 只认 line/branch/method（逗号分隔），"both" 是非法值会被静默忽略
-      - name: Test + coverage gate (line & branch >= 98%, vector conformance)
-        run: >
-          dotnet test --no-restore
-          /p:CollectCoverage=true
-          /p:Threshold=98
-          '/p:ThresholdType="line,branch"'
-          /p:CoverletOutputFormat=opencover
+      - name: Verify (build + tests + coverage gate)
+        uses: ./.github/actions/verify

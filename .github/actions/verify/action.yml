@@ -1,0 +1,36 @@
+name: 'verify'
+description: 'Wop.Sdk 统一验证段：restore + 零警告构建 + 覆盖率门禁（ci 与 release 单源引用）'
+
+inputs:
+  dotnet-version:
+    description: '.NET SDK 版本'
+    required: false
+    default: '8.0.x'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Restore
+      shell: bash
+      run: dotnet restore
+
+    - name: Build (zero warnings tolerated)
+      shell: bash
+      run: dotnet build --no-restore -warnaserror
+
+    # 门禁纪律：不可用 --no-build（coverlet 插桩在 build 阶段注入）；
+    # ThresholdType 只认 line/branch/method，"both" 是非法值会被静默忽略；
+    # 值需内层引号防 MSBuild 逗号分词（MSB1006）
+    - name: Test + coverage gate (line & branch >= 98%, vector conformance)
+      shell: bash
+      run: >
+        dotnet test --no-restore
+        /p:CollectCoverage=true
+        /p:Threshold=98
+        '/p:ThresholdType="line,branch"'
+        /p:CoverletOutputFormat=opencover
