@@ -247,7 +247,7 @@ public class VectorConformanceTests
     [Fact]
     public void FormatRules_全量()
     {
-        for (var i = 0; i < 8; i++)
+        for (var i = 0; i < 12; i++)
         {
             var id = Vec("formatRules." + i + ".id");
             var value = Vec("formatRules." + i + ".value");
@@ -269,7 +269,15 @@ public class VectorConformanceTests
                     break;
                 case "b64url-with-padding":
                 case "b64url-illegal-char":
+                case "b64url-trailing-bits-noncanonical-2":   // D10 严格性（spec 升格向量）
+                case "b64url-trailing-bits-noncanonical-3":
                     Assert.Throws<WopException>(() => Codec.DecodeB64Url(value));
+                    break;
+                case "b64url-trailing-bits-canonical-2":
+                    Assert.Equal(new byte[] { 0x00 }, Codec.DecodeB64Url(value));
+                    break;
+                case "b64url-trailing-bits-canonical-3":
+                    Assert.Equal(new byte[] { 0x4D, 0x61 }, Codec.DecodeB64Url(value));   // "Ma"
                     break;
                 default:
                     throw new Xunit.Sdk.XunitException("未预期 formatRules 向量 " + id);
@@ -309,6 +317,6 @@ public class VectorConformanceTests
         Assert.Equal(3, Root.Value.GetProperty("signature").GetArrayLength());
         Assert.Equal(6, Root.Value.GetProperty("keyEncrypt").GetArrayLength());
         Assert.Equal(2, Root.Value.GetProperty("dekPayload").GetArrayLength());
-        Assert.Equal(8, Root.Value.GetProperty("formatRules").GetArrayLength());
+        Assert.Equal(12, Root.Value.GetProperty("formatRules").GetArrayLength());
     }
 }
