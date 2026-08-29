@@ -1,5 +1,7 @@
 # wop-dotnet-sdk
 
+[![NuGet](https://img.shields.io/nuget/v/Wop.Sdk.svg)](https://www.nuget.org/packages/Wop.Sdk/)
+
 Official merchant-side .NET SDK for the WOP gateway: encapsulates the protocol core
 (suite parsing, canonicalRequest, structured signing, content-digest, L2 digital envelope,
 signature verification & decryption) plus an HttpClient adapter, so merchants integrate
@@ -97,7 +99,7 @@ Tests consume the same golden-vector copy as gateway CI
 
 ```bash
 export PATH="$HOME/.dotnet:$PATH"
-dotnet test /p:CollectCoverage=true /p:Threshold=98 /p:ThresholdType=both
+dotnet test /p:CollectCoverage=true /p:Threshold=98 '/p:ThresholdType="line,branch"'
 ```
 
 Coverage:
