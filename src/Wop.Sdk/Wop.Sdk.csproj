@@ -7,7 +7,9 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Version>0.1.0</Version>
+    <PackageId>Wop.Sdk</PackageId>
     <Authors>wop-platform</Authors>
+    <PackageProjectUrl>https://github.com/wop-platform/wop-dotnet-sdk</PackageProjectUrl>
     <Description>WOP 网关商户侧官方 .NET SDK：协议核心（套件解析/canonicalRequest/结构化签名/content-digest/L2 数字信封/验签解密）+ HttpClient 适配层。RSA3072/4096 与 SM2-SM3 双套件（BouncyCastle.Cryptography）。</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/wop-platform/wop-dotnet-sdk</RepositoryUrl>
