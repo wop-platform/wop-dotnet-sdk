@@ -48,8 +48,16 @@ jobs:
         run: dotnet pack src/Wop.Sdk -c Release -o dist
 
       - name: Publish to NuGet.org
+        if: ${{ secrets.NUGET_API_KEY != '' }}
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: >
           dotnet nuget push "dist/Wop.Sdk.*.nupkg" -k "$NUGET_API_KEY"
           -s https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Upload package artifact (NUGET_API_KEY 未配置时的手动发布通道)
+        if: ${{ secrets.NUGET_API_KEY == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: dist/*.nupkg
