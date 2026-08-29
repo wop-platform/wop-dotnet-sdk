@@ -3,4 +3,6 @@ bin/
 obj/
 *.user
 TestResults/
-coverage*
+tests/**/coverage.json
+tests/**/coverage.opencover.xml
+tests/**/coverage/

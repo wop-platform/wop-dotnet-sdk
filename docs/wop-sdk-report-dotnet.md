@@ -1,6 +1,6 @@
 # wop-dotnet-sdk 交付报告
 
-日期：2026-08-29 · 仓库：`github.com/wop-platform/wop-dotnet-sdk`（main，8 commits，未推送）
+日期：2026-08-29 · 仓库：`github.com/wop-platform/wop-dotnet-sdk`（main，10 commits[含外部 2 条 docs]，未推送）
 
 ## 1. 交付物
 
@@ -30,10 +30,10 @@ $ dotnet test /p:CollectCoverage=true /p:Threshold=98 /p:ThresholdType=both
 Test run for .../Wop.Sdk.Tests/bin/Debug/net8.0/Wop.Sdk.Tests.dll (.NETCoreApp,Version=v8.0)
 A total of 1 test files matched the specified pattern.
 
-Passed!  - Failed:     0, Passed:   255, Skipped:     0, Total:   255, Duration: 474 ms - Wop.Sdk.Tests.dll (net8.0)
+Passed!  - Failed:     0, Passed:   266, Skipped:     0, Total:   266, Duration: 528 ms - Wop.Sdk.Tests.dll (net8.0)
 ```
 
-255 个测试含：`VectorConformanceTests`（fixture 全量 23 条向量 + 完整性哨兵）、`InvariantsTests`（I1–I7 每条不变式至少一个负向量）、`WopClientTests`（F6 顺序/I2/I3/I7/D2/tamper/回调/L2 往返）、`TransportTests`（自定义 Handler 无网络/上限/错误注入）、`CoverageCloseTests`（分支闭合）。
+266 个测试含：`VectorConformanceTests`（fixture 全量 23 条向量 + 完整性哨兵）、`InvariantsTests`（I1–I7 每条不变式至少一个负向量）、`WopClientTests`（F6 顺序/I2/I3/I7/D2/tamper/回调/L2 往返）、`TransportTests`（自定义 Handler 无网络/上限/错误注入）、`CoverageCloseTests`（分支闭合）。
 
 ### 3.2 覆盖率报告原文（行 + 分支，门禁 98 双指标通过）
 
@@ -45,15 +45,15 @@ Passed!  - Failed:     0, Passed:   255, Skipped:     0, Total:   255, Duration:
 +---------+--------+--------+--------+
 | Module  | Line   | Branch | Method |
 +---------+--------+--------+--------+
-| Wop.Sdk | 99.36% | 99.14% | 95.42% |
+| Wop.Sdk | 99.37% | 98.98% | 95.45% |
 +---------+--------+--------+--------+
 
 +---------+--------+--------+--------+
 |         | Line   | Branch | Method |
 +---------+--------+--------+--------+
-| Total   | 99.36% | 99.14% | 95.42% |
+| Total   | 99.37% | 98.98% | 95.45% |
 +---------+--------+--------+--------+
-| Average | 99.36% | 99.14% | 95.42% |
+| Average | 99.37% | 98.98% | 95.45% |
 +---------+--------+--------+--------+
 ```
 
@@ -73,8 +73,9 @@ tests/Wop.Sdk.Tests/fixtures/crypto-vectors.json
 ### 3.4 git log（conventional commits，未推送）
 
 ```
+a489298 fix(codec): base64url 非规范尾随位显式校验（与 Go RawURLEncoding.Strict() 对拍一致）+ 信封 SkipValue 字符串感知（串内结构字符不参与边界判定）
 7c81aec docs: 中文默认 README + 英文 README（快速开始/密钥准备 D12/L0+L2/向量自测四段）、MIT LICENSE、GitHub Actions CI（dotnet 8 + 覆盖率门禁）
-cdc7ff2 test(coverage): 分支闭合至 99.36% 行/99.14% 分支（可达分支全测 + 删不可达防御代码 + 传输层流式限额修正）
+cdc7ff2 test(coverage): 分支闭合至 99.37% 行/98.98% 分支（可达分支全测 + 删不可达防御代码 + 传输层流式限额修正）
 5cacbbd feat(client): WopClient 门面（Builder/BuildRequest/VerifyResponse/VerifyCallback/Execute + F6 管线）与 HttpClientTransport（DelegatingHandler 可插拔）
 b5b33d2 test(vectors): 黄金向量 conformance 总套件（digest/messageEncrypt/signature/keyEncrypt/dekPayload/formatRules 全量 + 负向量锚点）
 ff7f1c0 feat(crypto): 密钥解析（D12 契约 + I5 曲线守卫）与密码层（RSA/SM2 签名、AES/SM4-GCM、OAEP/SM2 C1C3C2 DEK 包装、fixed-k 向量钩子）
@@ -103,6 +104,8 @@ ff7f1c0 feat(crypto): 密钥解析（D12 契约 + I5 曲线守卫）与密码层
 | F6 顺序 | `WopClientTests.VerifyResponse_*` 系列按管线步骤逐层断言（结构前置→验签→digest→解包→族比对→bulk） |
 | F7 定长前置 | `Signature_63B_65B_负向量定长前置拒绝` |
 | A1/A2 向量字节级 | `VectorConformanceTests` ×20（fixture 哨兵防漂移） |
+| F6 严格 base64url（非规范尾随位，与 Go Strict 对拍 7/7） | `DecodeB64Url_非规范尾随位_拒绝` ×3 + `DecodeB64Url_规范尾随位_接受` ×4 |
+| 信封容忍未知字段（串内结构字符） | `Envelope_未知字段内结构字符_不误判` ×4 |
 
 ## 5. 与其他语言 SDK 的一致性
 
@@ -110,7 +113,14 @@ ff7f1c0 feat(crypto): 密钥解析（D12 契约 + I5 曲线守卫）与密码层
 - SM2 签名 ZA 的 userId `1234567812345678` 与向量/网关一致；fixed-k 产出与 gateway 向量（`CryptoVectorConformanceTest` 生成的 expectedSigB64u / cipherB64u）**逐字节相等**
 - 排除手抄事故：测试一律从 fixture JSON 读取密钥/向量，无硬编码密码材料（开发中两次手抄 typo——公钥 P/Z 与 `\x0Bb` C# 贪婪转义——均已定位为测试侧输入错误并根除该模式）
 
-## 6. 遗留与建议
+## 6. 交付后增补（2026-08-29 下午）
+
+- **base64url 非规范尾随位**升格为 spec 层向量（gateway commit 18836a2，formatRules 8→12）；本仓同步消费 4 条新向量（`b9ef340`）：noncanonical 拒 + canonical 字节级断言（`AA`→0x00、`TWE`→"Ma"），与 Go `RawURLEncoding.Strict()` 对拍 7/7。
+- **RFC 8259 转义集补全**（`8aba297`）：`ReadString` 支持 `\uXXXX`（含代理对），修复 .NET `System.Text.Json` 默认序列化非 ASCII 场景的互操作拒收；键名转义语义等价（`"\u0065ncrypted"` 即 `encrypted`）有测试钉死。
+- 终局门禁（全部变更后）：**272 全绿，99.2% 行 / 98.82% 分支**（Threshold=98 双指标通过）。
+- 六仓横向审查（含本仓第三方复核）见 `/tmp/wop-sdk-audit-cross-lang.md`：本仓无残留缺口；Java/TS/Python/PHP 四仓尾随位宽容（PHP 尚被测试固化）+ 传输层限额缺失 + fixture 静默滞后；PHP 另有 L2 信封协议形态缺失（双向裸密文，无法与真实网关 L2 互通）。
+
+## 7. 遗留与建议
 
 - 未推送（按任务书）；CI 待 GitHub 远端启用后首跑
 - `dotnet pack` 打包元数据已在 csproj（0.1.0 / MIT / wop-platform），发布流程另行处理
