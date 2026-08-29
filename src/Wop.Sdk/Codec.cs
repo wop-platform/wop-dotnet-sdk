@@ -35,14 +35,34 @@ public static class Codec
         {
             throw new WopException(WopErrorCode.Protocol, "base64url 串长度非法（%4==1）");
         }
+        // 非规范尾随位显式校验（与 Go RawURLEncoding.Strict() 对齐）：
+        // %4==2（1 字节 → 2 字符，8 数据位）→ 尾字符低 4 位须零；
+        // %4==3（2 字节 → 3 字符，16 数据位）→ 尾字符低 2 位须零
+        var rem = s.Length % 4;
+        if (rem == 2 || rem == 3)
+        {
+            var idx = DecodeIndex(s[s.Length - 1]);
+            var mask = rem == 2 ? 0xF : 0x3;
+            if ((idx & mask) != 0)
+            {
+                throw new WopException(WopErrorCode.Protocol, "base64url 串含非规范尾随位");
+            }
+        }
         var std = new StringBuilder(s.Length + 3)
             .Append(s).Replace('-', '+').Replace('_', '/');
         var pad = (4 - std.Length % 4) % 4;
         std.Append('=', pad);
-        // 预检（字符集 + 长度）后 FromBase64String 恒成功，无需防御 catch
+        // 预检（字符集 + 长度 + 尾随位）后 FromBase64String 恒成功且规范
         return Convert.FromBase64String(std.ToString());
     }
 
+    private static int DecodeIndex(char c)
+    {
+        if (c >= 'A' && c <= 'Z') return c - 'A';
+        if (c >= 'a' && c <= 'z') return c - 'a' + 26;
+        if (c >= '0' && c <= '9') return c - '0' + 52;
+        return c == '-' ? 62 : 63;
+    }
     /// <summary>小写十六进制（D10：统一小写；.NET BitConverter 默认大写带连字符是经典翻车点）。</summary>
     public static string LowerHex(byte[] data)
     {

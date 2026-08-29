@@ -119,6 +119,13 @@ public static class EncryptedEnvelope
         while (i < s.Length)
         {
             var c = s[i];
+            if (c == '"')
+            {
+                // 字符串整体跳过：串内结构字符（{}[],）不参与深度/边界判定
+                var (_, after) = ReadString(s, i);
+                i = after;
+                continue;
+            }
             if (c == '{' || c == '[')
             {
                 depth++;
