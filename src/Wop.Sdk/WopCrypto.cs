@@ -81,8 +81,9 @@ internal static class WopCrypto
 
     /// <summary>对 canonicalRequest 字节加签，返回 base64url 无填充签名。
     /// RSA = SHA256withRSA（PKCS#1 v1.5）；SM2 = SM3withSM2 裸 r‖s 64B（D9）。
-    /// fixedK 仅测试向量消费（须落在 [1, n-1]）。</summary>
-    internal static string Sign(AlgorithmSuite suite, AsymmetricKeyMaterial priv, byte[] message, BigInteger? fixedK = null)
+    /// fixedK 仅测试向量消费（须落在 [1, n-1]）；random 为确定性随机源钩子
+    /// （SM2 k 从注入流消费，interop 随机流合同），null → 真 CSPRNG。</summary>
+    internal static string Sign(AlgorithmSuite suite, AsymmetricKeyMaterial priv, byte[] message, BigInteger? fixedK = null, SecureRandom? random = null)
     {
         byte[] signature;
         if (suite.IsSm2)
@@ -92,9 +93,9 @@ internal static class WopCrypto
                 throw new WopException(WopErrorCode.Config, "SM2 套件缺少私钥");
             }
             var signer = new SM2Signer(PlainDsaEncoding.Instance, new SM3Digest());
-            var random = SecureRandomFor(fixedK);
+            var signRandom = SecureRandomFor(fixedK, random);
             signer.Init(true, new ParametersWithID(
-                new ParametersWithRandom(priv.Sm2Private, random), Sm2Defaults.UserId));
+                new ParametersWithRandom(priv.Sm2Private, signRandom), Sm2Defaults.UserId));
             signer.BlockUpdate(message, 0, message.Length);
             // SM2Signer 对合法密钥恒产出（无效 r/s 内部重试），无失败路径
             signature = signer.GenerateSignature();
@@ -207,7 +208,7 @@ internal static class WopCrypto
     /// <summary>用公钥包装 DEK 载荷明文，返回 base64url 无填充密文。
     /// RSA = OAEP 显式双 SHA-256 + 空 label（D10/F2 头号跨语言漂移源，显式构造）；
     /// SM2 = C1C3C2 裸拼接（D9）。fixedK 仅测试向量消费。</summary>
-    internal static string WrapDek(AlgorithmSuite suite, AsymmetricKeyMaterial pub, byte[] payload, BigInteger? fixedK = null)
+    internal static string WrapDek(AlgorithmSuite suite, AsymmetricKeyMaterial pub, byte[] payload, BigInteger? fixedK = null, SecureRandom? random = null)
     {
         byte[] wrapped;
         if (suite.IsSm2)
@@ -217,7 +218,7 @@ internal static class WopCrypto
                 throw new WopException(WopErrorCode.Config, "SM2 套件缺少 DEK 包装公钥");
             }
             var engine = new SM2Engine(SM2Engine.Mode.C1C3C2);
-            engine.Init(true, new ParametersWithRandom(pub.Sm2Public, SecureRandomFor(fixedK)));
+            engine.Init(true, new ParametersWithRandom(pub.Sm2Public, SecureRandomFor(fixedK, random)));
             wrapped = engine.ProcessBlock(payload, 0, payload.Length);
         }
         else
@@ -226,9 +227,11 @@ internal static class WopCrypto
             {
                 throw new WopException(WopErrorCode.Config, "RSA 套件缺少 DEK 包装公钥");
             }
+            // OAEP seed 从注入流消费（OAEP-from-stream 确定性，interop 随机流合同：
+            // CEK、IV 之后依次取 seed），null → 真 CSPRNG
             var engine = new OaepEncoding(new RsaEngine(),
                 new Sha256Digest(), new Sha256Digest(), Array.Empty<byte>());
-            engine.Init(true, new ParametersWithRandom(pub.RsaPublic, SecureRandomFor(null)));
+            engine.Init(true, new ParametersWithRandom(pub.RsaPublic, random ?? new SecureRandom()));
             wrapped = engine.ProcessBlock(payload, 0, payload.Length);
         }
         return Codec.EncodeB64Url(wrapped);
@@ -278,9 +281,10 @@ internal static class WopCrypto
         return plain;
     }
 
-    /// <summary>随机源选择：fixedK 提供时构造定标量随机（向量专用），否则真 CSPRNG。
+    /// <summary>随机源选择：fixedK 提供时构造定标量随机（向量专用）；
+    /// 否则注入流优先（确定性钩子），最后真 CSPRNG。
     /// I4 纪律：出站 IV/CEK/nonce 的 CSPRNG 生成点唯一（本层），每次调用独立。</summary>
-    private static SecureRandom SecureRandomFor(BigInteger? fixedK)
+    private static SecureRandom SecureRandomFor(BigInteger? fixedK, SecureRandom? random)
     {
         if (fixedK is { } k)
         {
@@ -290,6 +294,6 @@ internal static class WopCrypto
             }
             return new FixedScalarRandom(k);
         }
-        return new SecureRandom();
+        return random ?? new SecureRandom();
     }
 }
