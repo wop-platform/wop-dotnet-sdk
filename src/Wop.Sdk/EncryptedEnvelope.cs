@@ -81,6 +81,27 @@ public static class EncryptedEnvelope
                 {
                     throw Bad("信封 JSON 转义非法");
                 }
+                if (s[i] == 'u')
+                {
+                    // \uXXXX（JSON 规范转义集；代理对由两个相邻 \u 转义自然拼接）
+                    if (i + 4 >= s.Length)
+                    {
+                        throw Bad("信封 JSON 转义非法");
+                    }
+                    var hex = s.Substring(i + 1, 4);
+                    for (var h = 0; h < 4; h++)
+                    {
+                        var d = hex[h];
+                        var isHex = d >= '0' && d <= '9' || d >= 'a' && d <= 'f' || d >= 'A' && d <= 'F';
+                        if (!isHex)
+                        {
+                            throw Bad("信封 JSON 转义非法");
+                        }
+                    }
+                    sb.Append((char)Convert.ToInt32(hex, 16));
+                    i += 5;
+                    continue;
+                }
                 c = s[i] switch
                 {
                     '"' => '"',
