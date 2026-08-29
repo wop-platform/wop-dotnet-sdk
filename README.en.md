@@ -9,7 +9,6 @@ without touching wire-level byte formats.
 - Crypto dependency (the single blessed path, E5): [BouncyCastle.Cryptography](https://www.nuget.org/packages/BouncyCastle.Cryptography) (successor of Portable.BouncyCastle)
 - Suites (F1): `WOP-RSA3072-SHA256` / `WOP-RSA4096-SHA256` / `WOP-SM2-SM3` (both international and GM suites fully supported)
 - Protocol source of truth: `gtsp-wop-gateway/docs/crypto-strategy-spec.md` (v0.3-reviewed) and `wop-sdk-spec.md` (v1.0-ratified)
-- License: MIT, version 0.1.0
 
 ## Quick Start
 
