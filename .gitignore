@@ -6,3 +6,6 @@ TestResults/
 tests/**/coverage.json
 tests/**/coverage.opencover.xml
 tests/**/coverage/
+
+# Reqnroll 生成代码（.feature.cs 为构建生成物，不入库）
+tests/**/*.feature.cs

@@ -1,0 +1,10 @@
+{
+  "stryker-config": {
+    "solution": "Wop.Sdk.sln",
+    "target-framework": "net8.0",
+    "reporters": ["json", "progress"],
+    "concurrency": 8,
+    "additional-timeout": 10000,
+    "mutation-level": "Advanced"
+  }
+}
