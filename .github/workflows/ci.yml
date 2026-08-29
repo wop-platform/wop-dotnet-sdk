@@ -36,33 +36,3 @@ jobs:
           /p:Threshold=98
           '/p:ThresholdType="line,branch"'
           /p:CoverletOutputFormat=opencover
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: test
-    runs-on: ubuntu-latest
-    env:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Pack
-        run: dotnet pack src/Wop.Sdk -c Release -o dist
-
-      - name: Publish to NuGet.org
-        if: env.NUGET_API_KEY != ''
-        run: >
-          dotnet nuget push "dist/Wop.Sdk.*.nupkg" -k "$NUGET_API_KEY"
-          -s https://api.nuget.org/v3/index.json --skip-duplicate
-
-      - name: Upload package artifact (NUGET_API_KEY 未配置时的手动发布通道)
-        if: env.NUGET_API_KEY == ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-package
-          path: dist/*.nupkg
