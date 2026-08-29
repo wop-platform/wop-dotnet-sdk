@@ -30,7 +30,7 @@ runs:
       shell: bash
       run: >
         dotnet test --no-restore
-        /p:CollectCoverage=true
-        /p:Threshold=98
-        '/p:ThresholdType="line,branch"'
-        /p:CoverletOutputFormat=opencover
+        -p:CollectCoverage=true
+        -p:Threshold=98
+        '-p:ThresholdType="line,branch"'
+        -p:CoverletOutputFormat=opencover
