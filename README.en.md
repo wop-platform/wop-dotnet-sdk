@@ -1,6 +1,7 @@
 # wop-dotnet-sdk
 
 [![NuGet](https://img.shields.io/nuget/v/Wop.Sdk.svg)](https://www.nuget.org/packages/Wop.Sdk/)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/wop-platform/wop-dotnet-sdk?utm_source=oss&utm_medium=github&utm_campaign=wop-platform%2Fwop-dotnet-sdk&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 Official merchant-side .NET SDK for the WOP gateway: encapsulates the protocol core
 (suite parsing, canonicalRequest, structured signing, content-digest, L2 digital envelope,
