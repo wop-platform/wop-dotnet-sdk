@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>0.1.6</Version>
+    <Version>0.1.7</Version>
     <PackageId>Wop.Sdk</PackageId>
     <Authors>wop-platform</Authors>
     <PackageProjectUrl>https://github.com/wop-platform/wop-dotnet-sdk</PackageProjectUrl>
