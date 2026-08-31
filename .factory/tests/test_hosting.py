@@ -11,9 +11,11 @@
 （conftest 注入 .factory 到 sys.path）
 """
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 
@@ -576,7 +578,10 @@ class TestCodeupEndpointFallback:
         with pytest.raises(hosting.HostingError) as e:
             ad._req("GET", "/oapi/v1/codeup/organizations/org/repositories/42")
         # 两次都失败才报错；且报错信息指向重试后的端点
-        assert "openapi-rdc.aliyuncs.com" in str(e.value)
+        msg = str(e.value)
+        url_candidates = re.findall(r"https?://[^\s'\"]+", msg)
+        hosts = [urlparse(u).hostname for u in url_candidates]
+        assert any(h == "openapi-rdc.aliyuncs.com" for h in hosts)
 
 
 class TestCli:
