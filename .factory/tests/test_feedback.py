@@ -317,3 +317,15 @@ def test_adapt_manifest_preserves_old_to_new_order():
     shas = [c * 40 for c in "abc"]
     text = "".join("%s\ts%s\n" % (s, i) for i, s in enumerate(shas))
     assert [i["sha"] for i in feedback.adapt_manifest(text, set())] == shas
+
+def test_gather_commits_merges_files(monkeypatch):
+    """_files_by_sha 结果必须挂回 commits（feedable/pending 判定的 files 来源）。"""
+    commits = [{"sha": "a" * 40, "subject": "s", "feedable": True},
+               {"sha": "b" * 40, "subject": "t", "feedable": False}]
+    fbs = {"a" * 40: {"factory_lib.py"}}  # b 无映射 → 验证 .get 回退空集契约
+    monkeypatch.setattr(feedback, "_git_log_commits", lambda: commits)
+    monkeypatch.setattr(feedback, "_files_by_sha", lambda: fbs)
+    out = feedback._gather_commits()
+    assert out[0]["files"] == {"factory_lib.py"}  # 有映射 → 合并
+    assert out[1]["files"] == set()  # 无映射 → 空集（实现若去掉回退，此处 KeyError）
+    assert out[1]["feedable"] is False
