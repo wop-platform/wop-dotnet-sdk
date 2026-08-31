@@ -1,7 +1,10 @@
 # wop-dotnet-sdk
 
-[![NuGet](https://img.shields.io/nuget/v/Wop.Sdk.svg)](https://www.nuget.org/packages/Wop.Sdk/)
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/wop-platform/wop-dotnet-sdk?utm_source=oss&utm_medium=github&utm_campaign=wop-platform%2Fwop-dotnet-sdk&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+[![NuGet](https://img.shields.io/nuget/v/Wop.Sdk)](https://www.nuget.org/packages/Wop.Sdk/) [![Release](https://img.shields.io/github/v/release/wop-platform/wop-dotnet-sdk)](https://github.com/wop-platform/wop-dotnet-sdk/releases)
+[![CI](https://github.com/wop-platform/wop-dotnet-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/wop-platform/wop-dotnet-sdk/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/github/license/wop-platform/wop-dotnet-sdk)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-net8.0%20%7C%20netstandard2.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/) ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/wop-platform/wop-dotnet-sdk?utm_source=oss&utm_medium=github&utm_campaign=wop-platform%2Fwop-dotnet-sdk&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
+
 
 WOP 网关商户侧官方 .NET SDK：封装协议核心（套件解析、canonicalRequest、结构化签名、
 content-digest、L2 数字信封、验签解密）与 HttpClient 适配层，商户无需理解线上字节格式即可安全对接网关。
