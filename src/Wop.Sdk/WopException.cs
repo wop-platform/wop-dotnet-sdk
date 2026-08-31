@@ -50,5 +50,6 @@ public sealed class WopException : Exception
         code,
         code == WopErrorCode.DecryptFailed ? "解密失败" : "签名验证失败");
 
+    /// <summary>统一诊断串 "wop: [CODE] message"（错误码大写，便于日志检索）。</summary>
     public override string ToString() => "wop: [" + ErrorCode.ToString().ToUpperInvariant() + "] " + Message;
 }

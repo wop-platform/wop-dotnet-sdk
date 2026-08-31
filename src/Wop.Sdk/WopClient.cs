@@ -161,6 +161,7 @@ public sealed class WopClient
         return (Verify(draft.Method, draft.Path, response.Headers, response.Body), response);
     }
 
+    /// <summary>验签统一入口：头名归一化（lowercase）后转 VerifyInbound；WopException → Fail。</summary>
     private VerifyResult Verify(string method, string path,
         IEnumerable<KeyValuePair<string, string>> headerPairs, byte[]? wireBody)
     {
@@ -179,6 +180,7 @@ public sealed class WopClient
         }
     }
 
+    /// <summary>入站校验主流程：签名头解析 → 套件一致性 → 结构前置校验 → 时间窗/nonce → 验签 → L2 解密。</summary>
     private VerifyResult VerifyInbound(string method, string path,
         Dictionary<string, string> headers, byte[]? wireBody)
     {
@@ -262,6 +264,7 @@ public sealed class WopClient
         return VerifyResult.Success(plaintext);
     }
 
+    /// <summary>取头（缺失返回空串）。</summary>
     private static string GetHeader(Dictionary<string, string> headers, string name)
     {
         return headers.TryGetValue(name, out var v) ? v : "";
@@ -282,8 +285,10 @@ public sealed class WopClientBuilder
     internal SecureRandom RandomValue { get; private set; } = new();
     internal string? GatewayBaseUrlValue { get; private set; }
 
+    /// <summary>默认时钟：Unix 毫秒。</summary>
     private static long DefaultClock() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+    /// <summary>默认 nonce：CSPRNG 16 字节小写 hex。</summary>
     private static string DefaultNonce()
     {
         var bytes = new byte[16];

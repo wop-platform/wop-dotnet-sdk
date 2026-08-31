@@ -85,6 +85,7 @@ public sealed class SignHeader
         return new SignHeader(securityReq, seg[0], expiredSeconds, signedHeaders, seg[3]);
     }
 
+    /// <summary>解析 signedHeaders 段：分号切分、trim、lowercase、剔空。</summary>
     private static IReadOnlyList<string> ParseSignedHeaders(string raw)
     {
         var parts = raw.Split(';');

@@ -154,6 +154,7 @@ public sealed class HttpClientTransport : IWopTransport
         public override long Length => throw new NotSupportedException();
         public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
+        /// <summary>读入缓冲区并累计读取量，超限即中止（协议类错误，防失控读）。</summary>
         public override int Read(byte[] buffer, int offset, int count)
         {
             var n = _inner.Read(buffer, offset, count);
@@ -165,9 +166,13 @@ public sealed class HttpClientTransport : IWopTransport
             return n;
         }
 
+        /// <summary>不支持：只读流。</summary>
         public override void Flush() => throw new NotSupportedException();
+        /// <summary>不支持：不可定位流。</summary>
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        /// <summary>不支持：只读流。</summary>
         public override void SetLength(long value) => throw new NotSupportedException();
+        /// <summary>不支持：只读流。</summary>
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

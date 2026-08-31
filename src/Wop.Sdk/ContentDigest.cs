@@ -61,6 +61,7 @@ public static class ContentDigest
         return (tag, hex);
     }
 
+    /// <summary>x-wop-content-digest 格式非法错误的统一工厂（协议类固定文案）。</summary>
     private static WopException Invalid() => new(WopErrorCode.Protocol,
         "x-wop-content-digest 格式非法：须为 <sha-256|sm3> + 恰一空格 + 64 位小写 hex");
 
@@ -88,6 +89,7 @@ public static class ContentDigest
         }
     }
 
+    /// <summary>恒时相等比较（长度恒等前提，无长度分支泄露）。</summary>
     private static bool ConstantTimeEquals(string a, string b)
     {
         // 长度恒等（Parse 钉死 64 hex、computed 恒 64），无长度分支
