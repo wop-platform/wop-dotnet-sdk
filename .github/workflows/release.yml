@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+      id-token: write   # Trusted Publishing：GitHub OIDC 令牌签发（nuget.org 换取 1h 临时 API key）
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -26,15 +25,22 @@ jobs:
       - name: Pack (Release, version = tag)
         run: dotnet pack src/Wop.Sdk/Wop.Sdk.csproj -c Release -o dist /p:Version="$VERSION"
 
+      # Trusted Publishing（nuget.org 策略 #322180684：wop-platform/wop-dotnet-sdk + release.yml）：
+      # OIDC 令牌 → nuget.org 换取临时 API key（1h 有效，一令牌一密钥），无长期凭据
+      - name: NuGet login (OIDC → temp API key)
+        id: nuget
+        uses: NuGet/login@v1
+        with:
+          user: dreambt   # nuget.org profile 名（包 owner），非邮箱
+
       - name: Push to NuGet.org
-        if: env.NUGET_TOKEN != ''
         run: >
           dotnet nuget push dist/*.nupkg
           --source https://api.nuget.org/v3/index.json
-          --api-key "$NUGET_TOKEN" --skip-duplicate
+          --api-key "${{ steps.nuget.outputs.NUGET_API_KEY }}" --skip-duplicate
 
-      - name: Upload package artifact (NUGET_TOKEN 未配置时的手动发布通道)
-        if: env.NUGET_TOKEN == ''
+      - name: Upload package artifact (发布排障通道)
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: nuget-package
