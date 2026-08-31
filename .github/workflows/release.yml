@@ -9,7 +9,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write      # GitHub Release 创建（gh release create）
       id-token: write   # Trusted Publishing：GitHub OIDC 令牌签发（nuget.org 换取 1h 临时 API key）
     steps:
       - name: Checkout
@@ -38,6 +38,14 @@ jobs:
           dotnet nuget push dist/*.nupkg
           --source https://api.nuget.org/v3/index.json
           --api-key "${{ steps.nuget.outputs.NUGET_API_KEY }}" --skip-duplicate
+
+      - name: Create GitHub Release (nupkg 资产)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.nupkg \
+            --title "Wop.Sdk ${GITHUB_REF_NAME#v}" \
+            --generate-from-tag
 
       - name: Upload package artifact (发布排障通道)
         if: always()
