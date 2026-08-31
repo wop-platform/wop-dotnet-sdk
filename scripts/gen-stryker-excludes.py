@@ -13,31 +13,39 @@ BuildRequest 30 同方法均有真击杀），方法粒度排除会一并排掉�
 虚化击杀率；唯 AlgorithmSuite.ctor 零误伤但单独混用两机制徒增复杂度。
 字符跨度是唯一能贴合「逐条论证过的等价域」的粒度。
 
+漂移防线（--check）只校验、不自动重定位：源码演进后由人工核对语义未变、
+更新 EQUIVALENT_LINES/ANCHORS 行号，再 --init 重生成区间摘要快照。
+两层校验：① ANCHORS 行前缀（快速定位失配）② 区间内容 sha256 摘要
+（区间内任何变更即失败——单行前缀挡不住区间内部/尾侧改动）。
+
 用法:
-  python3 scripts/gen-stryker-excludes.py           # 打印 span 参数（每行一条）
-  python3 scripts/gen-stryker-excludes.py --check   # 校验清单行号未漂移（CI 用）
+  gen-stryker-excludes.py            # 打印 span 参数（每行一条，runner 消费）
+  gen-stryker-excludes.py --check    # 漂移校验（ANCHORS + 快照摘要），CI 用
+  gen-stryker-excludes.py --init     # 重生成快照（更新清单后显式执行）
 """
 
+import hashlib
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src" / "Wop.Sdk"
+SNAPSHOT = ROOT / "scripts" / "equivalent-span-snapshot.txt"
 
-# 等价变异点清单（文件 → 行区间列表）＋ 黑盒不可区分论证：
-#   Codec 61-64   DecodeIndex 返回值仅进入 (idx & mask)!=0 判定，字符置换后非零性不变
-#   Codec 72,136  byte 无符号，>> 与 >>> 恒等（C# 11 unsigned right shift）
-#   ContentDigest 43,83  IndexOf↔LastIndexOf：恰一空格合法域两者恒等、非法域均拒
-#   ContentDigest 44     sp==0 不可达（tag 为空时先落 Invalid 同码同文案）
-#   SignHeader 49,50     同上两类（Trim 后 sp==0 不可达；单空格域等价）
-#   EncryptHeader 20     value=null 与 "Stryker was here!" 同落 23 行同文案
+# 等价变异点清单（文件 → 行区间列表，行号为 2026-08-31 变基后）＋论证：
+#   Codec 62-65   DecodeIndex 返回值仅进入 (idx & mask)!=0 判定，字符置换后非零性不变
+#   Codec 73,138  byte 无符号，>> 与 >>> 恒等（C# 11 unsigned right shift）
+#   ContentDigest 43,84 IndexOf↔LastIndexOf：恰一空格合法域两者恒等、非法域均拒
+#   ContentDigest 44    sp==0 不可达（tag 为空时先落 Invalid 同码同文案）
+#   SignHeader 49,50    同上两类（Trim 后 sp==0 不可达；单空格域等价）
+#   EncryptHeader 20    value=null 与 "Stryker was here!" 同落 23 行同文案
 #   EncryptedEnvelope 33 continue 删除后顺序执行与下轮迭代等价
-#   KeyCodec 58          标准 PEM 数据行不含 '-'（base64 字母表），StartsWith↔EndsWith 不可分
-#   Transport 52         baseUrl null 与 SH! 均使 Uri 构造失败、同文案
-#   WopClient 85         wireBody 非 null 且空不可达（上游 { Length: > 0 } 保证）
-#   WopClient 170        Verify 头字典 OrdinalIgnoreCase，To↔Upper 等价
-#   WopCrypto 35,47      off 上界恒为 len-1，< ↔ <= 等价
-#   WopCrypto 178-180    OpenMessage 显式 fail-fast 与 catch 兜底同 Fuzzy 文案（保留代码、排除变异）
+#   KeyCodec 59         标准 PEM 数据行不含 '-'（base64 字母表），StartsWith↔EndsWith 不可分
+#   Transport 52        baseUrl null 与 SH! 均使 Uri 构造失败、同文案
+#   WopClient 85        wireBody 非 null 且空不可达（上游 { Length: > 0 } 保证）
+#   WopClient 171       Verify 头字典 OrdinalIgnoreCase，To↔Upper 等价
+#   WopCrypto 36,50     off 上界恒为 len-1，< ↔ <= 等价
+#   WopCrypto 183-186   OpenMessage 显式 fail-fast 与 catch 兜底同 Fuzzy 文案（保留代码、排除变异）
 #   AlgorithmSuite 40-48 构造函数体删除在本仓 nullable 严格编译下为 CS8618 编译错，
 #                        Stryker 内部编译语境存活、不可稳定复现
 EQUIVALENT_LINES: dict[str, list[tuple[int, int]]] = {
@@ -53,7 +61,7 @@ EQUIVALENT_LINES: dict[str, list[tuple[int, int]]] = {
     "AlgorithmSuite.cs":  [(40, 48)],
 }
 
-# 行号锚（漂移检测）：行内容前缀 → 源码变更后 --check 报错即须更新清单
+# 行号锚（漂移检测第一层）：行内容前缀 → 快速定位失配
 ANCHORS: dict[tuple[str, int], str] = {
     ("Codec.cs", 62): "if (c >= 'A' && c <= 'Z')",
     ("Codec.cs", 73): "chars[i * 2] = HexLower",
@@ -76,34 +84,84 @@ ANCHORS: dict[tuple[str, int], str] = {
 }
 
 
-def char_span(text: str, start_line: int, end_line: int) -> tuple[int, int]:
+def read_lines(name: str) -> list[str]:
+    return (SRC / name).read_text(encoding="utf-8").split("\n")
+
+
+def char_span(lines: list[str], start_line: int, end_line: int) -> tuple[int, int]:
     """1-based 行区间 → 0-based 字符跨度（含端点行全部内容）。"""
-    lines = text.split("\n")
-    start = sum(len(l) + 1 for l in lines[: start_line - 1])
-    end = start + sum(len(l) + 1 for l in lines[start_line - 1 : end_line]) - 1
+    start = sum(len(text_line) + 1 for text_line in lines[: start_line - 1])
+    end = start + sum(len(text_line) + 1 for text_line in lines[start_line - 1 : end_line]) - 1
     return start, end
 
 
-def main() -> int:
-    check = "--check" in sys.argv
-    failed = False
-    for (name, line), prefix in ANCHORS.items():
-        text = (SRC / name).read_text(encoding="utf-8")
-        actual = text.split("\n")[line - 1].strip()
-        if not actual.startswith(prefix):
-            print(f"ANCHOR DRIFT: {name}:{line} 期望前缀 {prefix!r} 实际 {actual!r}", file=sys.stderr)
-            failed = True
-    if failed:
-        return 1
-    if check:
-        print("anchors ok")
-        return 0
+def span_digest(lines: list[str], lo: int, hi: int) -> str:
+    """区间内容稳定摘要（sha256，规范入快照；区间内任何变更即失配）。"""
+    body = "\n".join(lines[lo - 1 : hi])
+    return hashlib.sha256(body.encode("utf-8")).hexdigest()[:16]
+
+
+def iter_spans():
     for name, ranges in sorted(EQUIVALENT_LINES.items()):
-        text = (SRC / name).read_text(encoding="utf-8")
+        lines = read_lines(name)
         for lo, hi in ranges:
-            s, e = char_span(text, lo, hi)
-            print(f"!**/{name}{{{s}..{e}}}")
+            yield name, lo, hi, lines
+
+
+def check() -> int:
+    drifted = []
+    for (name, line), prefix in sorted(ANCHORS.items()):
+        lines = read_lines(name)
+        actual = lines[line - 1].strip()
+        if not actual.startswith(prefix):
+            drifted.append(f"ANCHOR {name}:{line} 期望前缀 {prefix!r} 实际 {actual!r}")
+    if not SNAPSHOT.exists():
+        print(f"区间摘要快照缺失: {SNAPSHOT}（先 --init）", file=sys.stderr)
+        return 1
+    expected = {}
+    for row in SNAPSHOT.read_text(encoding="utf-8").split("\n"):
+        if row and not row.startswith("#"):
+            name, lo, hi, digest = row.split(":")
+            expected[(name, int(lo), int(hi))] = digest
+    actual = {}
+    for name, lo, hi, lines in iter_spans():
+        actual[(name, lo, hi)] = span_digest(lines, lo, hi)
+    if set(expected) != set(actual):
+        drifted.append(f"快照区间集失配：清单 {len(actual)} vs 快照 {len(expected)}"
+                       f"（差集 {set(actual) ^ set(expected)}）")
+    for key in sorted(set(expected) & set(actual)):
+        if expected[key] != actual[key]:
+            drifted.append(f"SPAN {key[0]}:{key[1]}-{key[2]} 区间内容摘要失配"
+                           f"（区间内代码已变，核对语义后更新清单并 --init）")
+    if drifted:
+        for d in drifted:
+            print(f"ANCHOR DRIFT: {d}", file=sys.stderr)
+        return 1
+    print(f"anchors ok ({len(ANCHORS)} 锚 + {len(actual)} 区间摘要全部命中)")
     return 0
+
+
+def init_snapshot() -> int:
+    rows = [f"{name}:{lo}:{hi}:{span_digest(lines, lo, hi)}"
+            for name, lo, hi, lines in iter_spans()]
+    SNAPSHOT.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    print(f"快照生成 {len(rows)} 条 → {SNAPSHOT}")
+    return 0
+
+
+def print_spans() -> int:
+    for name, lo, hi, lines in iter_spans():
+        s, e = char_span(lines, lo, hi)
+        print(f"!**/{name}{{{s}..{e}}}")
+    return 0
+
+
+def main() -> int:
+    if "--check" in sys.argv:
+        return check()
+    if "--init" in sys.argv:
+        return init_snapshot()
+    return print_spans()
 
 
 if __name__ == "__main__":

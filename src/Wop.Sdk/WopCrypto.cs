@@ -27,7 +27,7 @@ internal sealed class FixedScalarRandom : SecureRandom
         _scalar = k.ToByteArrayUnsigned();
     }
 
-    /// <summary>以 I2OSP 左补零语义把定标量填满采样缓冲（任意宽度）。</summary>
+    /// <summary>以 I2OSP 左补零语义填采样缓冲；缓冲窄于标量时保留低位、丢弃高位（截断而非定宽编码）。</summary>
     private void Fill(byte[] buffer)
     {
         for (var i = 0; i < buffer.Length; i++)
@@ -194,7 +194,7 @@ internal static class WopCrypto
         }
     }
 
-    /// <summary>AEAD 对称加解密核：SM4-GCM / AES-GCM，输出 ciphertext‖tag 尾拼。</summary>
+    /// <summary>AEAD 对称加解密核：SM4-GCM / AES-GCM。加密输入明文、输出 ciphertext‖tag；解密输入 ciphertext‖tag、输出明文。</summary>
     private static byte[] ProcessAead(AlgorithmSuite suite, bool forEncryption, byte[] input, byte[] key, byte[] iv)
     {
         var cipher = suite.IsSm2

@@ -31,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false   # 只读校验，不留凭据
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

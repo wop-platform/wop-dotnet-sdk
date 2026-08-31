@@ -7,9 +7,15 @@ cd "$(dirname "$0")/.."
 
 python3 scripts/gen-stryker-excludes.py --check
 
+# 排除参数生成失败必须终止（process substitution 会吞非零退出码：
+# 显式落盘临时文件，生成失败时 set -e 生效，杜绝「空排除跑全量」的静默漂移）
+SPAN_FILE=$(mktemp)
+trap 'rm -f "$SPAN_FILE"' EXIT
+python3 scripts/gen-stryker-excludes.py > "$SPAN_FILE"
+
 ARGS=()
 while IFS= read -r span; do
   ARGS+=(-m "$span")
-done < <(python3 scripts/gen-stryker-excludes.py)
+done < "$SPAN_FILE"
 
 dotnet tool run dotnet-stryker "${ARGS[@]}" "$@"

@@ -3,7 +3,8 @@
 
 度量口径（契约「各语言符号定义」.NET 行）：
   对外（100%）＝顶层 public class/interface/record/struct ＋ public 方法
-              （override 不豁免——简单一致）；
+              （override 不豁免——简单一致）＋ interface 成员（C# 隐式
+              public，无修饰符形态）；
   内部（≥80%，空集＝达标）＝internal/private 方法。
   构造函数不是方法（无返回类型位），不扫；属性/字段/enum 不在口径内。
 
@@ -20,6 +21,8 @@ docstring 判定：声明的前一行（须非空）以 /// 开头，即声明�
 正则实现说明（任务书「正则即可」）：以「行首修饰符序列 + 返回类型 + 名称
 + (」识别方法，等价排除构造函数（名称前只有一个词）、字段/属性（无参列
 或前缀含 '='）。纯文本无 AST——C# 语法在此仓形态规整，负控制覆盖易错面。
+「record class Foo」/「record struct Foo」由前缀组贪婪回溯正确捕获 Foo
+（self_test 第 5 组实证），无需特判。
 """
 
 from __future__ import annotations
@@ -41,7 +44,7 @@ INTERNAL_MIN = 0.80
 # enum 不在契约口径（class/interface/record/struct）内。
 TYPE_RE = re.compile(
     r"^public\s+(?:[A-Za-z_]\w*\s+){0,3}"
-    r"(class|interface|record|struct)\s+([A-Za-z_]\w*)"
+    r"(?P<kind>class|interface|record|struct)\s+(?P<name>[A-Za-z_]\w*)"
 )
 
 # 方法：行首缩进 + ≥1 个修饰符 + 返回类型 + 名称(+泛型参数) + '('。
@@ -54,19 +57,38 @@ METHOD_RE = re.compile(
     r"(?P<ret>.+?)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*(?:<[^>]*>)?\s*(?=\()"
 )
+# interface 成员（隐式 public，无修饰符）：缩进 + 返回类型 + 名称 + '('。
+# 仅在 interface 上下文内启用（scan_text 维护），仓形态规整无嵌套类型。
+IFACE_MEMBER_RE = re.compile(
+    r"^\s+(?P<ret>[A-Za-z_][\w.<>,\s]*?\w)\s+"
+    r"(?P<name>[A-Za-z_]\w*)\s*(?:<[^>]*>)?\s*(?=\()"
+)
 # 防误报：名称本身是修饰词（如 "… = new("）、或前缀混入赋值/成员体
 # （'='、'{'、';'）的一律不是方法声明。
 _MODIFIER_SET = set(MODIFIER_WORDS.split("|"))
 
 
-def _match_method(line: str) -> tuple[str, str] | None:
+def _match_method(line: str, in_interface: bool = False) -> tuple[str, str] | None:
     """命中方法声明 → (可见性类别, 名称)；否则 None。
 
     可见性类别：'public' → 对外；'internal'/'private' → 内部。
+    interface 体内成员无修饰符（C# 隐式 public）→ in_interface 时
+    「返回类型 + 名称(」形态按对外计。
     """
     m = METHOD_RE.match(line)
     if not m:
-        return None
+        if not in_interface:
+            return None
+        mi = IFACE_MEMBER_RE.match(line)
+        if not mi:
+            return None
+        name = mi.group("name")
+        if name in _MODIFIER_SET:
+            return None
+        prefix = mi.group("ret") + name
+        if any(ch in prefix for ch in "={};"):
+            return None
+        return "public", name
     name = m.group("name")
     if name in _MODIFIER_SET:
         return None
@@ -97,16 +119,21 @@ def scan_text(path: str, text: str) -> dict:
     """纯函数：扫描单个源码文本 → {'external': [...], 'internal': [...]}。
 
     每个条目为 (path, line_no, kind, name)；kind ∈ {'type', 'method'}。
+    维护顶层 interface 上下文（行首 '}' 结束）：成员隐式 public 计对外。
     """
     external: list[tuple[str, int, str, str]] = []
     internal: list[tuple[str, int, str, str]] = []
     lines = text.splitlines()
+    in_interface = False
     for i, line in enumerate(lines):
         tm = TYPE_RE.match(line)
         if tm:
-            external.append((path, i + 1, "type", tm.group(2)))
+            external.append((path, i + 1, "type", tm.group("name")))
+            in_interface = tm.group("kind") == "interface"
             continue
-        mm = _match_method(line)
+        if line.startswith("}"):
+            in_interface = False
+        mm = _match_method(line, in_interface)
         if mm:
             vis, name = mm
             entry = (path, i + 1, "method", name)
@@ -269,6 +296,25 @@ public sealed class Foo
 }
 """
 
+BAD_IFACE_MEMBER = """namespace Demo;
+
+/// <summary>接口。</summary>
+public interface IWop
+{
+    TransportResponse Send(RequestDraft draft);
+}
+"""
+
+GOOD_IFACE = """namespace Demo;
+
+/// <summary>接口。</summary>
+public interface IWop
+{
+    /// <summary>发送。</summary>
+    TransportResponse Send(RequestDraft draft);
+}
+"""
+
 
 def run_stats_on(text: str) -> dict:
     """对单段文本跑完整统计（自检用；与 run_gate 同一判定路径）。"""
@@ -298,6 +344,7 @@ def self_test() -> int:
         ("doc 与声明间空行", BAD_BLANK_LINE, "Bar"),
         ("override 不豁免", BAD_OVERRIDE, "ToString"),
         ("元组返回方法", BAD_TUPLE_RETURN, "Pair"),
+        ("interface 成员缺 doc（隐式 public）", BAD_IFACE_MEMBER, "Send"),
     ):
         st = run_stats_on(text)
         expect(any(m.endswith(" " + sym) for m in st["missing"]),
@@ -325,12 +372,32 @@ def self_test() -> int:
     st = run_stats_on("namespace D;\ninternal static class C\n{\n" + three + "}\n")
     expect(not st["internal_ok"], f"内部 3/5 应不达标: {st}")
 
+    # 5) record class/struct 复合形式捕获实证（前缀组贪婪回溯，PR #20 review）
+    for decl in ("public record class Foo", "public record struct Foo",
+                 "public sealed record class Foo",
+                 "public partial record class Foo", "public record Foo"):
+        m = TYPE_RE.match(decl)
+        expect(m is not None and m.group("name") == "Foo",
+               f"record 复合形式捕获失败: {decl} -> "
+               f"{m.group('name') if m else None}")
+
+    # 6) interface 成员有 doc 不报缺；interface 上下文随 '}' 结束
+    gi = run_stats_on(GOOD_IFACE)
+    expect(not gi["missing"], f"GOOD_IFACE 误报: {gi['missing']}")
+    after = ("namespace D;\n\n/// d\npublic interface I\n{\n    int A();\n}\n"
+             "/// d\npublic class C\n{\n    int B() => 1;\n}\n")
+    ra = scan_text("after.cs", after)
+    expect(any(e[3] == "A" for e in ra["external"])
+           and not any(e[3] == "B" for e in ra["external"] + ra["internal"]),
+           f"interface 上下文未随 '}}' 结束: {ra}")
+
     if failures:
         print("self-test FAIL:", file=sys.stderr)
         for f in failures:
             print(f"  - {f}", file=sys.stderr)
         return 1
-    print("self-test OK（负控制：5 类坏输入均报缺，非声明零误报，阈值边界正确）")
+    print("self-test OK（负控制：6 类坏输入均报缺，非声明零误报，阈值边界正确，"
+          "record 复合与 interface 隐式 public 捕获正确）")
     return 0
 
 

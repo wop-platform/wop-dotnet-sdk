@@ -180,7 +180,8 @@ public sealed class WopClient
         }
     }
 
-    /// <summary>入站校验主流程：签名头解析 → 套件一致性 → 结构前置校验 → 时间窗/nonce → 验签 → L2 解密。</summary>
+    /// <summary>入站校验主流程：签名头解析 → 套件一致性 → 结构前置校验（digest 缺席/入签）→ 验签 → L2 解密。
+    /// 注：时间窗/nonce 重放防护由网关侧执行，本方法不校验。</summary>
     private VerifyResult VerifyInbound(string method, string path,
         Dictionary<string, string> headers, byte[]? wireBody)
     {
