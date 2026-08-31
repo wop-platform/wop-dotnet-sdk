@@ -54,6 +54,22 @@ public class MutationKillBoundaryTests
         var body = "{\"a\":{\"b\":\"}}}rz\"},\"encrypted\":\"AA\"}";
         Assert.Equal("AA", EncryptedEnvelope.Extract(Encoding.UTF8.GetBytes(body)));
     }
+    // EncryptedEnvelope SkipValue 循环内字符串感知：串内转义引号与逗号（裸扫描必错位）
+    [Fact]
+    public void 边界_串内转义引号与逗号_不误判()
+    {
+        var body = "{\"a\":\"x\\\"y,z\",\"encrypted\":\"AA\"}";
+        Assert.Equal("AA", EncryptedEnvelope.Extract(Encoding.UTF8.GetBytes(body)));
+    }
+
+
+    // 串内转义引号+闭合括号：裸扫描把 \" 后内容当结构字符，必错位到"缺少 encrypted"
+    [Fact]
+    public void 边界_串内转义引号后闭合括号_不误判()
+    {
+        var body = "{\"a\":\"a\\\"}\",\"encrypted\":\"AA\"}";
+        Assert.Equal("AA", EncryptedEnvelope.Extract(Encoding.UTF8.GetBytes(body)));
+    }
 
     // EncryptedEnvelope.cs:87 i+4 == s.Length 恰满截断（杀 >= → >：变异后 Substring 越界抛非 Wop 异常）
 // spec:D3
