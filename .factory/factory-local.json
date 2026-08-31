@@ -42,5 +42,6 @@
   "pr_review_skills": [],
   "upstream_repo": "im47cn/awesome-rules",
   "upstream_path": "~/sources/awesome-rules",
-  "feedback_branch_prefix": "feedback/wop-dotnet-sdk"
+  "feedback_branch_prefix": "feedback/wop-dotnet-sdk",
+  "port_point": "4a2c58c"
 }
