@@ -131,11 +131,6 @@ public static class EncryptedEnvelope
 
     private static int SkipValue(string s, int i)
     {
-        if (i < s.Length && s[i] == '"')
-        {
-            var (_, after) = ReadString(s, i);
-            return after;
-        }
         var depth = 0;
         while (i < s.Length)
         {

@@ -48,6 +48,7 @@ internal static class KeyCodec
         }
     }
 
+    /// <summary>提取 PEM 块 Base64 体（剥离 BEGIN/END 行与空白行）。</summary>
     private static string ExtractPemBody(string pem)
     {
         var lines = pem.Split('\n');
@@ -64,6 +65,7 @@ internal static class KeyCodec
         return sb.ToString();
     }
 
+    /// <summary>解析 RSA 公钥（SPKI DER，Base64/PEM 皆可），并校验模长匹配套件。</summary>
     internal static RsaKeyParameters ParseRsaPublicKey(string material, AlgorithmSuite suite)
     {
         var der = DecodeKeyMaterial(material);
@@ -83,6 +85,7 @@ internal static class KeyCodec
         }
     }
 
+    /// <summary>解析 RSA 私钥（PKCS#8 DER，Base64/PEM 皆可），并校验模长匹配套件。</summary>
     internal static RsaPrivateCrtKeyParameters ParseRsaPrivateKey(string material, AlgorithmSuite suite)
     {
         var der = DecodeKeyMaterial(material);
@@ -102,6 +105,7 @@ internal static class KeyCodec
         }
     }
 
+    /// <summary>校验 RSA 模长与套件要求一致（不符 → 配置类明确错误）。</summary>
     private static void ValidateRsaSize(AlgorithmSuite suite, int bits)
     {
         if (bits != suite.KeyBits)

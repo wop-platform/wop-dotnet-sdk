@@ -61,7 +61,9 @@ public sealed class VerifyResult
         Plaintext = plaintext;
     }
 
+    /// <summary>成功结果工厂（plaintext 可空：L0 时无明文产出）。</summary>
     internal static VerifyResult Success(byte[]? plaintext) => new(true, null, null, plaintext);
 
+    /// <summary>失败结果工厂：透传错误码与 Message（验签/解密类已模糊，I7）。</summary>
     internal static VerifyResult Fail(WopException e) => new(false, e.ErrorCode, e.Message, null);
 }

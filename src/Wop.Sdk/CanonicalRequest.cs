@@ -42,11 +42,10 @@ public static class CanonicalRequest
         string canonicalQueryString, string canonicalHeaders)
     {
         return nz(authString) + "\n" +
-               (nz(method) ?? "").Trim().ToUpperInvariant() + "\n" +
+               nz(method).Trim().ToUpperInvariant() + "\n" +
                nz(canonicalUri) + "\n" +
                nz(canonicalQueryString) + "\n" +
                nz(canonicalHeaders);
     }
-
-    private static string? nz(string? s) => s ?? "";
+    private static string nz(string? s) => s ?? "";
 }

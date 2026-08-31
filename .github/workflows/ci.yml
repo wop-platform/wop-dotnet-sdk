@@ -22,3 +22,18 @@ jobs:
 
       - name: Verify (build + tests + coverage gate)
         uses: ./.github/actions/verify
+
+  # 等价清单锚点漂移检测（wop-specs D7）：scripts/gen-stryker-excludes.py --check
+  # 校验等价排除清单的行号锚未随源码演进漂移——漂移会使 Stryker span 排除静默
+  # 失指（config mutate 键本就忽略 span，见 stryker-mutator/stryker-net#3814，
+  # 排除仅经 scripts/mutation-test.sh 的 CLI 路径生效）。秒级，每 PR 必跑。
+  equivalent-anchors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false   # 只读校验，不留凭据
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 scripts/gen-stryker-excludes.py --check

@@ -56,6 +56,7 @@ public static class Codec
         return Convert.FromBase64String(std.ToString());
     }
 
+    /// <summary>base64url 合法字符 → 6bit 值（'-'=62、'_'=63；字符集由调用方前置校验）。</summary>
     private static int DecodeIndex(char c)
     {
         if (c >= 'A' && c <= 'Z') return c - 'A';
@@ -109,6 +110,7 @@ public static class Codec
         return sb.ToString();
     }
 
+    /// <summary>TrimAll 的空白判定子集（空格、\t、\n、\x0B、\f、\r）。</summary>
     private static bool IsWhitespace(char c) =>
         c == ' ' || c == '\t' || c == '\n' || c == '\x0B' || c == '\f' || c == '\r';
 
@@ -139,5 +141,6 @@ public static class Codec
         return sb.ToString();
     }
 
+    /// <summary>4bit 值 → 大写十六进制字符（UrlEncodeJava 的 %XX 消费）。</summary>
     private static char HexUpper(int v) => (char)(v < 10 ? '0' + v : 'A' + v - 10);
 }

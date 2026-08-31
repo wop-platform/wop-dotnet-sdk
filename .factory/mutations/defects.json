@@ -118,6 +118,24 @@
       "replace": "/// 验签/解密类错误的 Message 恒为固定模糊文案（I7 纪律；负例：仅措辞变更）。",
       "gate": "tests",
       "expect_block": false
+    },
+    {
+      "id": "D-01",
+      "description": "docstring 破坏：删除 WopException.ToString 的 XML doc（对外 API 缺 docstring），docstring 门应拦截（exit 1 = 击杀）",
+      "target": "src/Wop.Sdk/WopException.cs",
+      "find": "    /// <summary>统一诊断串 \"wop: [CODE] message\"（错误码大写，便于日志检索）。</summary>\n    public override string ToString() => \"wop: [\" + ErrorCode.ToString().ToUpperInvariant() + \"] \" + Message;",
+      "replace": "    public override string ToString() => \"wop: [\" + ErrorCode.ToString().ToUpperInvariant() + \"] \" + Message;",
+      "gate": "docstring",
+      "expect_block": true
+    },
+    {
+      "id": "D-02",
+      "description": "docstring 破坏：删除 Transport.LimitStream.Read 的 XML doc（对外 API 缺 docstring），docstring 门应拦截（exit 1 = 击杀）",
+      "target": "src/Wop.Sdk/Transport.cs",
+      "find": "        /// <summary>读入缓冲区并累计读取量，超限即中止（协议类错误，防失控读）。</summary>\n        public override int Read(byte[] buffer, int offset, int count)",
+      "replace": "        public override int Read(byte[] buffer, int offset, int count)",
+      "gate": "docstring",
+      "expect_block": true
     }
   ]
 }

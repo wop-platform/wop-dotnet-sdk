@@ -27,6 +27,7 @@ internal sealed class FixedScalarRandom : SecureRandom
         _scalar = k.ToByteArrayUnsigned();
     }
 
+    /// <summary>以 I2OSP 左补零语义填采样缓冲；缓冲窄于标量时保留低位、丢弃高位（截断而非定宽编码）。</summary>
     private void Fill(byte[] buffer)
     {
         for (var i = 0; i < buffer.Length; i++)
@@ -36,9 +37,11 @@ internal sealed class FixedScalarRandom : SecureRandom
         }
     }
 
+    /// <summary>定标量应答 byte[] 采样（BC 随机采样口，测试确定性）。</summary>
     public override void NextBytes(byte[] bytes) => Fill(bytes);
 
 #if NET8_0
+    /// <summary>定标量应答 Span 采样（NET8_0 重载，语义与 byte[] 版一致）。</summary>
     public override void NextBytes(Span<byte> buffer)
     {
         for (var i = 0; i < buffer.Length; i++)
@@ -58,11 +61,13 @@ internal sealed class AsymmetricKeyMaterial
     internal ECPrivateKeyParameters? Sm2Private { get; init; }
     internal ECPublicKeyParameters? Sm2Public { get; init; }
 
+    /// <summary>按套件族解析商户私钥材料（SM2/RSA 二选一填充）。</summary>
     internal static AsymmetricKeyMaterial ParsePrivate(string material, AlgorithmSuite suite) =>
         suite.IsSm2
             ? new AsymmetricKeyMaterial { Sm2Private = KeyCodec.ParseSm2PrivateKey(material) }
             : new AsymmetricKeyMaterial { RsaPrivate = KeyCodec.ParseRsaPrivateKey(material, suite) };
 
+    /// <summary>按套件族解析平台公钥材料（SM2/RSA 二选一填充）。</summary>
     internal static AsymmetricKeyMaterial ParsePublic(string material, AlgorithmSuite suite) =>
         suite.IsSm2
             ? new AsymmetricKeyMaterial { Sm2Public = KeyCodec.ParseSm2PublicKey(material) }
@@ -189,6 +194,7 @@ internal static class WopCrypto
         }
     }
 
+    /// <summary>AEAD 对称加解密核：SM4-GCM / AES-GCM。加密输入明文、输出 ciphertext‖tag；解密输入 ciphertext‖tag、输出明文。</summary>
     private static byte[] ProcessAead(AlgorithmSuite suite, bool forEncryption, byte[] input, byte[] key, byte[] iv)
     {
         var cipher = suite.IsSm2
