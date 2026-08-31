@@ -1,7 +1,10 @@
 # Sourcery 规则保留清单（显式化"评论清零"的边界）。
 # 2026-08-31 评审确认的保留项：
 # - no-loop-in-tests / no-conditionals-in-tests：测试内循环/条件断言是惯用法
+# 2026-09-01 评审保留（与上游 awesome-rules .factory 工具链对齐）：
+# - low-code-quality：生成式低代码质量聚合项，工厂脚本属生成/流水线代码
 # 其余规则全开；新增触发点由 CI gate（sourcery-review-gate.yml）拦截。
+
 version: '1'
 
 ignore:
@@ -23,6 +26,7 @@ rule_settings:
   disable:
   - no-loop-in-tests
   - no-conditionals-in-tests
+  - low-code-quality
   rule_types:
   - refactoring
   - suggestion
