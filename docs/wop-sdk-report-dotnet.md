@@ -118,7 +118,7 @@ ff7f1c0 feat(crypto): 密钥解析（D12 契约 + I5 曲线守卫）与密码层
 - **base64url 非规范尾随位**升格为 spec 层向量（gateway commit 18836a2，formatRules 8→12）；本仓同步消费 4 条新向量（`b9ef340`）：noncanonical 拒 + canonical 字节级断言（`AA`→0x00、`TWE`→"Ma"），与 Go `RawURLEncoding.Strict()` 对拍 7/7。
 - **RFC 8259 转义集补全**（`8aba297`）：`ReadString` 支持 `\uXXXX`（含代理对），修复 .NET `System.Text.Json` 默认序列化非 ASCII 场景的互操作拒收；键名转义语义等价（`"\u0065ncrypted"` 即 `encrypted`）有测试钉死。
 - 终局门禁（全部变更后）：**272 全绿，99.2% 行 / 98.82% 分支**（Threshold=98 双指标通过）。
-- 六仓横向审查（含本仓第三方复核）见 `/tmp/wop-sdk-audit-cross-lang.md`：本仓无残留缺口；Java/TS/Python/PHP 四仓尾随位宽容（PHP 尚被测试固化）+ 传输层限额缺失 + fixture 静默滞后；PHP 另有 L2 信封协议形态缺失（双向裸密文，无法与真实网关 L2 互通）。
+- 六仓横向审查（含本仓第三方复核，一次性产物未入库）：本仓无残留缺口；Java/TS/Python/PHP 四仓尾随位宽容（PHP 尚被测试固化）+ 传输层限额缺失 + fixture 静默滞后；PHP 另有 L2 信封协议形态缺失（双向裸密文，无法与真实网关 L2 互通）。
 
 ## 7. 遗留与建议
 
