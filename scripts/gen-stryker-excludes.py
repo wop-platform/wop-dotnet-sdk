@@ -56,8 +56,8 @@ EQUIVALENT_LINES: dict[str, list[tuple[int, int]]] = {
     "EncryptedEnvelope.cs": [(33, 33)],
     "KeyCodec.cs":        [(59, 59)],
     "Transport.cs":       [(52, 52)],
-    "WopClient.cs":       [(85, 85), (171, 171)],
-    "WopCrypto.cs":       [(36, 36), (50, 50), (183, 186)],
+    "WopClient.cs":       [(85, 85), (172, 172)],
+    "WopCrypto.cs":       [(35, 35), (49, 49), (192, 195)],
     "AlgorithmSuite.cs":  [(40, 48)],
 }
 
@@ -76,10 +76,10 @@ ANCHORS: dict[tuple[str, int], str] = {
     ("KeyCodec.cs", 59): "if (t.Length == 0 || t.StartsWith",
     ("Transport.cs", 52): "_baseUrl = baseUrl ??",
     ("WopClient.cs", 85): "if (wireBody is { Length: > 0 })",
-    ("WopClient.cs", 171): "headers[name.ToLowerInvariant()]",
-    ("WopCrypto.cs", 36): "buffer[i] = off >= 0",
-    ("WopCrypto.cs", 50): "buffer[i] = off >= 0",
-    ("WopCrypto.cs", 183): "if (key.Length != suite.CekLength",
+    ("WopClient.cs", 172): "headers[name.ToLowerInvariant()]",
+    ("WopCrypto.cs", 35): "buffer[i] = off >= 0",
+    ("WopCrypto.cs", 49): "buffer[i] = off >= 0",
+    ("WopCrypto.cs", 192): "if (key.Length != suite.CekLength",
     ("AlgorithmSuite.cs", 40): "{",
 }
 
