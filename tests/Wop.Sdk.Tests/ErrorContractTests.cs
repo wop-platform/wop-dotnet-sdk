@@ -432,14 +432,14 @@ public class ErrorContractTests
     [Fact]
     public void 契约_SM2套件缺少私钥()
     {
-        Rex(() => WopCrypto.Sign(AlgorithmSuite.Parse("WOP-SM2-SM3"), RsaPrivMat(), Body),
+        Rex(() => WopCrypto.Sign(AlgorithmSuite.Parse("WOP-SM2-SM3"), RsaPrivMat(), Body, null),
             WopErrorCode.Config, "SM2 套件缺少私钥");
     }
 
     [Fact]
     public void 契约_RSA套件缺少私钥()
     {
-        Rex(() => WopCrypto.Sign(AlgorithmSuite.Parse("WOP-RSA3072-SHA256"), Sm2PrivMat(), Body),
+        Rex(() => WopCrypto.Sign(AlgorithmSuite.Parse("WOP-RSA3072-SHA256"), Sm2PrivMat(), Body, null),
             WopErrorCode.Config, "RSA 套件缺少私钥");
     }
 
@@ -447,14 +447,14 @@ public class ErrorContractTests
     public void 契约_SM2套件缺少验签公钥()
     {
         Rex(() => WopCrypto.Verify(AlgorithmSuite.Parse("WOP-SM2-SM3"), RsaPrivMat(), Body,
-            Codec.EncodeB64Url(new byte[64])), WopErrorCode.Config, "SM2 套件缺少验签公钥");
+            Codec.EncodeB64Url(new byte[64]), null), WopErrorCode.Config, "SM2 套件缺少验签公钥");
     }
 
     [Fact]
     public void 契约_RSA套件缺少验签公钥()
     {
         Rex(() => WopCrypto.Verify(AlgorithmSuite.Parse("WOP-RSA3072-SHA256"), Sm2PrivMat(), Body,
-            Codec.EncodeB64Url(new byte[384])), WopErrorCode.Config, "RSA 套件缺少验签公钥");
+            Codec.EncodeB64Url(new byte[384]), null), WopErrorCode.Config, "RSA 套件缺少验签公钥");
     }
 
     [Fact]
@@ -464,7 +464,7 @@ public class ErrorContractTests
             AlgorithmSuite.Parse("WOP-RSA3072-SHA256"),
             AsymmetricKeyMaterial.ParsePublic(K("rsa3072", "publicSpkiB64"),
                 AlgorithmSuite.Parse("WOP-RSA3072-SHA256")),
-            Body, Codec.EncodeB64Url(new byte[63])));
+            Body, Codec.EncodeB64Url(new byte[63]), null));
         Assert.Equal(WopErrorCode.Protocol, ex.ErrorCode);
         Assert.Contains("签名长度", ex.Message);
         Assert.Contains("字节与套件", ex.Message);
@@ -511,7 +511,7 @@ public class ErrorContractTests
     public void 契约_固定k范围()
     {
         Rex(() => WopCrypto.Sign(AlgorithmSuite.Parse("WOP-SM2-SM3"), Sm2PrivMat(), Body,
-            fixedK: Org.BouncyCastle.Math.BigInteger.Zero), WopErrorCode.Config, "固定 k");
+            Encoding.UTF8.GetBytes("demo-app"), fixedK: Org.BouncyCastle.Math.BigInteger.Zero), WopErrorCode.Config, "固定 k");
     }
 
     [Fact]
@@ -519,7 +519,7 @@ public class ErrorContractTests
     {
         // k = n 落在 [1, n-1] 之外：必须明确拒绝（杀 >= → > 边界变异）
         Rex(() => WopCrypto.Sign(AlgorithmSuite.Parse("WOP-SM2-SM3"), Sm2PrivMat(), Body,
-            fixedK: Sm2Params.Domain.N), WopErrorCode.Config, "固定 k");
+            Encoding.UTF8.GetBytes("demo-app"), fixedK: Sm2Params.Domain.N), WopErrorCode.Config, "固定 k");
     }
 
     // ==================== WopException ToString ====================

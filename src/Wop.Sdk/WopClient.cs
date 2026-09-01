@@ -91,7 +91,8 @@ public sealed class WopClient
                          _expiredSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var canonical = CanonicalRequest.Build(authString, upperMethod, path, "",
             CanonicalRequest.CanonicalHeaders(headers));
-        var signature = WopCrypto.Sign(_suite, _merchantPrivate, Encoding.UTF8.GetBytes(canonical), random: _random);
+        // D14：出向签名 userId = 出向 x-wop-appkey 头值（= _appKey）
+        var signature = WopCrypto.Sign(_suite, _merchantPrivate, Encoding.UTF8.GetBytes(canonical), Encoding.UTF8.GetBytes(_appKey), random: _random);
         var signedNames = headers.Keys.ToList();
         var signHeader = SignHeader.Build(_suite.SecurityReq, _expiredSeconds, signedNames, signature);
 
@@ -226,7 +227,8 @@ public sealed class WopClient
         }
         var canonical = CanonicalRequest.Build(parsed.AuthString, method, path, "",
             CanonicalRequest.CanonicalHeaders(signedMap));
-        WopCrypto.Verify(_suite, _platformPublic, Encoding.UTF8.GetBytes(canonical), parsed.Signature);
+        // D15：入向验签 userId 维持平台协议固定值（非 appKey；对齐 wop-go-sdk sm2PlatformUserID）
+        WopCrypto.Verify(_suite, _platformPublic, Encoding.UTF8.GetBytes(canonical), parsed.Signature, Sm2PlatformDefaults.InboundUserId);
 
         // 3. digest 复核（D2/I5：格式 + 族耦合 + 值比对）
         if (hasBody)

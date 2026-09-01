@@ -9,15 +9,14 @@ using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
 
 namespace Wop.Sdk;
-
-/// <summary>SM2 签名默认用户标识（协议向量钉死）。</summary>
-internal static class Sm2Defaults
+// SM2 入向验签 userId：平台协议固定 ZA 值（D15 裁决维持，否决入向改用 appKey 的提案）。
+// 仅入向验签路径使用；出向签名 userId 由调用方显式传入（D14：= 出向 x-wop-appkey 头值）。
+internal static class Sm2PlatformDefaults
 {
-    public static readonly byte[] UserId = System.Text.Encoding.UTF8.GetBytes("1234567812345678");
+    public static readonly byte[] InboundUserId = System.Text.Encoding.UTF8.GetBytes("1234567812345678");
 }
 
-/// <summary>定标量 SecureRandom：向量 conformance 的 fixed-k 唯一入口（测试专用）。
-/// 以 I2OSP 语义左补零填充任意读取宽度，使 BC 采样得到的标量恰为给定值。</summary>
+
 internal sealed class FixedScalarRandom : SecureRandom
 {
     private readonly byte[] _scalar;
@@ -86,9 +85,10 @@ internal static class WopCrypto
 
     /// <summary>对 canonicalRequest 字节加签，返回 base64url 无填充签名。
     /// RSA = SHA256withRSA（PKCS#1 v1.5）；SM2 = SM3withSM2 裸 r‖s 64B（D9）。
+    /// userId 为 SM2 ZA 计算输入（D14：须为出向 x-wop-appkey 值，RSA 忽略）。
     /// fixedK 仅测试向量消费（须落在 [1, n-1]）；random 为确定性随机源钩子
     /// （SM2 k 从注入流消费，interop 随机流合同），null → 真 CSPRNG。</summary>
-    internal static string Sign(AlgorithmSuite suite, AsymmetricKeyMaterial priv, byte[] message, BigInteger? fixedK = null, SecureRandom? random = null)
+    internal static string Sign(AlgorithmSuite suite, AsymmetricKeyMaterial priv, byte[] message, byte[]? userId, BigInteger? fixedK = null, SecureRandom? random = null)
     {
         byte[] signature;
         if (suite.IsSm2)
@@ -97,10 +97,14 @@ internal static class WopCrypto
             {
                 throw new WopException(WopErrorCode.Config, "SM2 套件缺少私钥");
             }
+            if (userId is null || userId.Length == 0)
+            {
+                throw new WopException(WopErrorCode.Config, "SM2 ZA userId 为空（须为出向 x-wop-appkey 值）");
+            }
             var signer = new SM2Signer(PlainDsaEncoding.Instance, new SM3Digest());
             var signRandom = SecureRandomFor(fixedK, random);
             signer.Init(true, new ParametersWithID(
-                new ParametersWithRandom(priv.Sm2Private, signRandom), Sm2Defaults.UserId));
+                new ParametersWithRandom(priv.Sm2Private, signRandom), userId));
             signer.BlockUpdate(message, 0, message.Length);
             // SM2Signer 对合法密钥恒产出（无效 r/s 内部重试），无失败路径
             signature = signer.GenerateSignature();
@@ -120,8 +124,9 @@ internal static class WopCrypto
     }
 
     /// <summary>验签：b64url 严格解码 → 定长前置校验（F7）→ 族路由验签。
+    /// userId 为 SM2 ZA 计算输入（D15：入向验签为平台协议固定 ZA 值，RSA 忽略）。
     /// 失败一律模糊（I7）；格式/长度类为协议明确错误。</summary>
-    internal static void Verify(AlgorithmSuite suite, AsymmetricKeyMaterial pub, byte[] message, string sigB64Url)
+    internal static void Verify(AlgorithmSuite suite, AsymmetricKeyMaterial pub, byte[] message, string sigB64Url, byte[]? userId)
     {
         var signature = Codec.DecodeB64Url(sigB64Url);
         if (signature.Length != suite.SignatureLength)
@@ -137,8 +142,12 @@ internal static class WopCrypto
             {
                 throw new WopException(WopErrorCode.Config, "SM2 套件缺少验签公钥");
             }
+            if (userId is null || userId.Length == 0)
+            {
+                throw new WopException(WopErrorCode.Config, "SM2 ZA userId 为空（D15：入向验签为平台协议固定值）");
+            }
             var signer = new SM2Signer(PlainDsaEncoding.Instance, new SM3Digest());
-            signer.Init(false, new ParametersWithID(pub.Sm2Public, Sm2Defaults.UserId));
+            signer.Init(false, new ParametersWithID(pub.Sm2Public, userId));
             signer.BlockUpdate(message, 0, message.Length);
             ok = signer.VerifySignature(signature);
         }

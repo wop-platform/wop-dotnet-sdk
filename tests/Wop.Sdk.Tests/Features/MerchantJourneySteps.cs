@@ -411,7 +411,7 @@ public sealed class MerchantJourneySteps
         var signedMap = signedNames.ToDictionary(n => n, n => headers[n], StringComparer.Ordinal);
         var canonical = CanonicalRequest.Build("v1/1800", method, path, "",
             CanonicalRequest.CanonicalHeaders(signedMap));
-        var sig = WopCrypto.Sign(suite, PlatformKey(), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(suite, PlatformKey(), Encoding.UTF8.GetBytes(canonical), null);
         headers[WopHeaders.Sign] = SignHeader.Build(suite.SecurityReq, 1800, signedNames, sig);
         return (headers, wireBody);
     }
