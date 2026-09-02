@@ -23,6 +23,12 @@ runs:
       shell: bash
       run: dotnet build --no-restore -warnaserror
 
+    # 断言 netstandard2.0 目标编译零错误（主库老 TFM 消费面，仅编译不跑测试；
+    # 与主 Build 双保险：Build 走解决方案全量，此步显式钉死 -f netstandard2.0）
+    - name: netstandard2.0 compile assertion
+      shell: bash
+      run: dotnet build src/Wop.Sdk/Wop.Sdk.csproj -f netstandard2.0 --no-restore -warnaserror
+
     # 门禁纪律：不可用 --no-build（coverlet 插桩在 build 阶段注入）；
     # ThresholdType 只认 line/branch/method，"both" 是非法值会被静默忽略；
     # 值需内层引号防 MSBuild 逗号分词（MSB1006）
