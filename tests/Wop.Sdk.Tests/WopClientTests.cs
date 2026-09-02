@@ -244,7 +244,7 @@ public class WopClientTests
         // signedHeaders 不含 digest
         var canonical = CanonicalRequest.Build("v1/1800", "POST", "/api/pay", "",
             CanonicalRequest.CanonicalHeaders(headers));
-        var sig = WopCrypto.Sign(client.Suite, RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(client.Suite, RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical), null);
         headers[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800,
             new[] { WopHeaders.AppKey, WopHeaders.Timestamp }, sig);
         var result = client.VerifyResponse("POST", "/api/pay", headers, body);
@@ -285,7 +285,7 @@ public class WopClientTests
         };
         var canonical = CanonicalRequest.Build("v1/1800", "GET", "/x", "",
             CanonicalRequest.CanonicalHeaders(headers));
-        var sig = WopCrypto.Sign(client.Suite, RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(client.Suite, RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical), null);
         headers[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800,
             headers.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList(), sig);
         var result = client.VerifyResponse("GET", "/x", headers, null);
@@ -379,7 +379,7 @@ public class WopClientTests
         }
         var canonical = CanonicalRequest.Build("v1/1800", method, path ?? "/api/pay", "",
             CanonicalRequest.CanonicalHeaders(signedMap));
-        var sig = WopCrypto.Sign(client.Suite, RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(client.Suite, RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical), Sm2PlatformDefaults.InboundUserId); // D15：模拟平台加签用平台固定 ZA
         headers[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800, signedNames, sig);
         return (headers, wireBody);
     }
@@ -396,7 +396,7 @@ public class WopClientTests
         var signedMap = signedNames.ToDictionary(n => n, n => clone[n]);
         var canonical = CanonicalRequest.Build("v1/1800", "POST", "/api/enc", "",
             CanonicalRequest.CanonicalHeaders(signedMap));
-        var sig = WopCrypto.Sign(client.Suite, RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(client.Suite, RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical), Sm2PlatformDefaults.InboundUserId); // D15：模拟平台加签用平台固定 ZA
         clone[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800, signedNames, sig);
         return clone;
     }

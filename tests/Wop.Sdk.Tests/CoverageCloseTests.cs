@@ -73,14 +73,14 @@ public class CoverageCloseTests
     {
         var msg = Encoding.UTF8.GetBytes("m");
         var rsaEmpty = new AsymmetricKeyMaterial();
-        Assert.Throws<WopException>(() => WopCrypto.Sign(RsaSuite(), rsaEmpty, msg));
-        Assert.Throws<WopException>(() => WopCrypto.Verify(RsaSuite(), rsaEmpty, msg, "AA"));
+        Assert.Throws<WopException>(() => WopCrypto.Sign(RsaSuite(), rsaEmpty, msg, null));
+        Assert.Throws<WopException>(() => WopCrypto.Verify(RsaSuite(), rsaEmpty, msg, "AA", null));
         Assert.Throws<WopException>(() => WopCrypto.WrapDek(RsaSuite(), rsaEmpty, msg));
         Assert.Throws<WopException>(() => WopCrypto.UnwrapDek(RsaSuite(), rsaEmpty, "AA"));
 
         var sm2Empty = new AsymmetricKeyMaterial();
-        Assert.Throws<WopException>(() => WopCrypto.Sign(Sm2Suite(), sm2Empty, msg));
-        Assert.Throws<WopException>(() => WopCrypto.Verify(Sm2Suite(), sm2Empty, msg, new string('A', 86)));
+        Assert.Throws<WopException>(() => WopCrypto.Sign(Sm2Suite(), sm2Empty, msg, null));
+        Assert.Throws<WopException>(() => WopCrypto.Verify(Sm2Suite(), sm2Empty, msg, new string('A', 86), null));
         Assert.Throws<WopException>(() => WopCrypto.WrapDek(Sm2Suite(), sm2Empty, msg));
         Assert.Throws<WopException>(() => WopCrypto.UnwrapDek(Sm2Suite(), sm2Empty, new string('A', 20)));
     }
@@ -94,13 +94,13 @@ public class CoverageCloseTests
         var sm2Key = AsymmetricKeyMaterial.ParsePrivate(K("sm2", "privateDB64"), Sm2Suite());
         var sm2Pub = AsymmetricKeyMaterial.ParsePublic(K("sm2", "publicPointB64"), Sm2Suite());
         // SM2 套件 + RSA 材料（类型不符）
-        Assert.Throws<WopException>(() => WopCrypto.Sign(Sm2Suite(), rsaKey, msg));
-        Assert.Throws<WopException>(() => WopCrypto.Verify(Sm2Suite(), rsaPub, msg, new string('A', 86)));
+        Assert.Throws<WopException>(() => WopCrypto.Sign(Sm2Suite(), rsaKey, msg, null));
+        Assert.Throws<WopException>(() => WopCrypto.Verify(Sm2Suite(), rsaPub, msg, new string('A', 86), null));
         Assert.Throws<WopException>(() => WopCrypto.WrapDek(Sm2Suite(), rsaPub, msg));
         Assert.Throws<WopException>(() => WopCrypto.UnwrapDek(Sm2Suite(), rsaKey, new string('A', 20)));
         // RSA 套件 + SM2 材料
-        Assert.Throws<WopException>(() => WopCrypto.Sign(RsaSuite(), sm2Key, msg));
-        Assert.Throws<WopException>(() => WopCrypto.Verify(RsaSuite(), sm2Pub, msg, "AA"));
+        Assert.Throws<WopException>(() => WopCrypto.Sign(RsaSuite(), sm2Key, msg, null));
+        Assert.Throws<WopException>(() => WopCrypto.Verify(RsaSuite(), sm2Pub, msg, "AA", null));
         Assert.Throws<WopException>(() => WopCrypto.WrapDek(RsaSuite(), sm2Pub, msg));
         Assert.Throws<WopException>(() => WopCrypto.UnwrapDek(RsaSuite(), sm2Key, "AA"));
     }
@@ -110,8 +110,8 @@ public class CoverageCloseTests
     {
         var sm2Key = AsymmetricKeyMaterial.ParsePrivate(K("sm2", "privateDB64"), Sm2Suite());
         var msg = Encoding.UTF8.GetBytes("m");
-        Assert.Throws<WopException>(() => WopCrypto.Sign(Sm2Suite(), sm2Key, msg, BigInteger.Zero));
-        Assert.Throws<WopException>(() => WopCrypto.Sign(Sm2Suite(), sm2Key, msg,
+        Assert.Throws<WopException>(() => WopCrypto.Sign(Sm2Suite(), sm2Key, msg, Encoding.UTF8.GetBytes("demo-app"), BigInteger.Zero));
+        Assert.Throws<WopException>(() => WopCrypto.Sign(Sm2Suite(), sm2Key, msg, Encoding.UTF8.GetBytes("demo-app"),
             new BigInteger("fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54124", 16)));
         Assert.Throws<WopException>(() => WopCrypto.WrapDek(Sm2Suite(),
             AsymmetricKeyMaterial.ParsePublic(K("sm2", "publicPointB64"), Sm2Suite()), msg, BigInteger.One.Negate()));
@@ -364,7 +364,7 @@ public class CoverageClose2Tests
         var signedNames = headers.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
         var canonical = CanonicalRequest.Build("v1/1800", "GET", "/q", "",
             CanonicalRequest.CanonicalHeaders(signedNames.ToDictionary(n => n, n => headers[n])));
-        var sig = WopCrypto.Sign(client.Suite, WopClientTests.RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(client.Suite, WopClientTests.RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical), null);
         headers[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800, signedNames, sig);
         var result = client.VerifyResponse("GET", "/q", headers, null);
         Assert.True(result.Ok);
@@ -379,7 +379,7 @@ public class CoverageClose2Tests
         Assert.Throws<WopException>(() => WopCrypto.Verify(
             AlgorithmSuite.Parse("WOP-RSA3072-SHA256"),
             WopClientTests.RespPubMaterial(AlgorithmSuite.Parse("WOP-SM2-SM3")),
-            Encoding.UTF8.GetBytes("m"), new string('A', 512)));
+            Encoding.UTF8.GetBytes("m"), new string('A', 512), null));
     }
 
     // ==================== Transport 单参构造 ====================

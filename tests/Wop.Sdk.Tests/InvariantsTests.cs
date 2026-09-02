@@ -28,7 +28,7 @@ public class InvariantsTests
         var signedNames = new[] { WopHeaders.AppKey, WopHeaders.Timestamp, WopHeaders.Nonce }.OrderBy(x => x, StringComparer.Ordinal).ToArray();
         var canonical = CanonicalRequest.Build("v1/1800", "POST", "/p", "",
             CanonicalRequest.CanonicalHeaders(signedNames.ToDictionary(n => n, n => headers[n])));
-        var sig = WopCrypto.Sign(client.Suite, WopClientTests.RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(client.Suite, WopClientTests.RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical), null);
         headers[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800, signedNames, sig);
 
         var result = client.VerifyResponse("POST", "/p", headers, body);
@@ -94,7 +94,7 @@ public class InvariantsTests
         var signedNames = headers.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
         var canonical = CanonicalRequest.Build("v1/1800", "POST", "/p", "",
             CanonicalRequest.CanonicalHeaders(signedNames.ToDictionary(n => n, n => headers[n])));
-        var sig = WopCrypto.Sign(client.Suite, WopClientTests.RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(client.Suite, WopClientTests.RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical), null);
         headers[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800, signedNames, sig);
         var result = client.VerifyResponse("POST", "/p", headers, body);
         Assert.Equal(WopErrorCode.Protocol, result.ErrorCode);
@@ -145,7 +145,7 @@ public static class WopClientTestExtensions
         var signedNames = headers.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
         var canonical = CanonicalRequest.Build("v1/1800", "POST", path, "",
             CanonicalRequest.CanonicalHeaders(signedNames.ToDictionary(n => n, n => headers[n])));
-        var sig = WopCrypto.Sign(client.Suite, WopClientTests.RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical));
+        var sig = WopCrypto.Sign(client.Suite, WopClientTests.RespKeyMaterial(client.Suite), Encoding.UTF8.GetBytes(canonical), Sm2PlatformDefaults.InboundUserId); // D15：模拟平台加签用平台固定 ZA
         headers[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800, signedNames, sig);
         return (headers, wire);
     }

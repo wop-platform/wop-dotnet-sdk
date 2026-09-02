@@ -94,19 +94,19 @@ public class VectorConformanceTests
     [Fact]
     public void Signature_RSA3072_产出字节级一致()
     {
-        var sig = WopCrypto.Sign(Suite("WOP-RSA3072-SHA256"), Priv("rsa3072"), Utf8(Vec("signature.0.message")));
+        var sig = WopCrypto.Sign(Suite("WOP-RSA3072-SHA256"), Priv("rsa3072"), Utf8(Vec("signature.0.message")), null);
         Assert.Equal(Vec("signature.0.expectedSigB64u"), sig);
         Assert.Equal(512, sig.Length);
-        WopCrypto.Verify(Suite("WOP-RSA3072-SHA256"), Pub("rsa3072"), Utf8(Vec("signature.0.message")), sig);
+        WopCrypto.Verify(Suite("WOP-RSA3072-SHA256"), Pub("rsa3072"), Utf8(Vec("signature.0.message")), sig, null);
     }
 
     [Fact]
     public void Signature_RSA4096_产出字节级一致()
     {
-        var sig = WopCrypto.Sign(Suite("WOP-RSA4096-SHA256"), Pub4096Priv(), Utf8(Vec("signature.1.message")));
+        var sig = WopCrypto.Sign(Suite("WOP-RSA4096-SHA256"), Pub4096Priv(), Utf8(Vec("signature.1.message")), null);
         Assert.Equal(Vec("signature.1.expectedSigB64u"), sig);
         Assert.Equal(683, sig.Length);
-        WopCrypto.Verify(Suite("WOP-RSA4096-SHA256"), Pub("rsa4096"), Utf8(Vec("signature.1.message")), sig);
+        WopCrypto.Verify(Suite("WOP-RSA4096-SHA256"), Pub("rsa4096"), Utf8(Vec("signature.1.message")), sig, null);
     }
 
     static AsymmetricKeyMaterial Pub4096Priv() =>
@@ -116,10 +116,10 @@ public class VectorConformanceTests
     public void Signature_SM2_fixedK_产出字节级一致()
     {
         var k = new BigInteger(1, B64uDecode(Vec("inputs.sm2FixedKB64u")));
-        var sig = WopCrypto.Sign(Suite("WOP-SM2-SM3"), Priv("sm2"), Utf8(Vec("signature.2.message")), k);
+        var sig = WopCrypto.Sign(Suite("WOP-SM2-SM3"), Priv("sm2"), Utf8(Vec("signature.2.message")), Utf8(Vec("inputs.sm2UserId")), k);
         Assert.Equal(Vec("signature.2.expectedSigB64u"), sig);
         Assert.Equal(86, sig.Length);
-        WopCrypto.Verify(Suite("WOP-SM2-SM3"), Pub("sm2"), Utf8(Vec("signature.2.message")), sig);
+        WopCrypto.Verify(Suite("WOP-SM2-SM3"), Pub("sm2"), Utf8(Vec("signature.2.message")), sig, Utf8(Vec("inputs.sm2UserId")));
     }
 
     [Fact]
@@ -130,8 +130,8 @@ public class VectorConformanceTests
         var msg = Utf8(Vec("signature.2.message"));
         var short63 = expected.Substring(0, 84);         // 63 字节
         var long65 = "AA" + expected;                    // 65 字节
-        Assert.Throws<WopException>(() => WopCrypto.Verify(sm2, Pub("sm2"), msg, short63));
-        Assert.Throws<WopException>(() => WopCrypto.Verify(sm2, Pub("sm2"), msg, long65));
+        Assert.Throws<WopException>(() => WopCrypto.Verify(sm2, Pub("sm2"), msg, short63, null));
+        Assert.Throws<WopException>(() => WopCrypto.Verify(sm2, Pub("sm2"), msg, long65, null));
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class VectorConformanceTests
         var der = new byte[] { 0x30, 0x45 }
             .Concat(new byte[70]).ToArray();
         Assert.Throws<WopException>(() => WopCrypto.Verify(Suite("WOP-SM2-SM3"), Pub("sm2"),
-            Utf8(Vec("signature.2.message")), Codec.EncodeB64Url(der)));
+            Utf8(Vec("signature.2.message")), Codec.EncodeB64Url(der), null));
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public class VectorConformanceTests
         var sig = Vec("signature.0.expectedSigB64u");
         var tampered = (sig[0] == 'A' ? 'B' : 'A') + sig.Substring(1);
         var ex = Assert.Throws<WopException>(() =>
-            WopCrypto.Verify(Suite("WOP-RSA3072-SHA256"), Pub("rsa3072"), Utf8(Vec("signature.0.message")), tampered));
+            WopCrypto.Verify(Suite("WOP-RSA3072-SHA256"), Pub("rsa3072"), Utf8(Vec("signature.0.message")), tampered, null));
         Assert.Equal(WopErrorCode.VerifyFailed, ex.ErrorCode);
         Assert.Equal("签名验证失败", ex.Message);
     }
@@ -160,9 +160,9 @@ public class VectorConformanceTests
     {
         // RSA 套件验 SM2 签名（86 字符 ≠ 512）→ 定长拒绝；反向同理
         Assert.Throws<WopException>(() => WopCrypto.Verify(Suite("WOP-RSA3072-SHA256"), Pub("rsa3072"),
-            Utf8(Vec("signature.2.message")), Vec("signature.2.expectedSigB64u")));
+            Utf8(Vec("signature.2.message")), Vec("signature.2.expectedSigB64u"), null));
         Assert.Throws<WopException>(() => WopCrypto.Verify(Suite("WOP-SM2-SM3"), Pub("sm2"),
-            Utf8(Vec("signature.0.message")), Vec("signature.0.expectedSigB64u")));
+            Utf8(Vec("signature.0.message")), Vec("signature.0.expectedSigB64u"), null));
     }
 
     // ==================== keyEncrypt（6 条向量全量） ====================

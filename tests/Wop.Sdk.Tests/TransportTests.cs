@@ -143,7 +143,7 @@ public class TransportTests
                 JsonDocument.Parse(File.OpenRead(Path.Combine(AppContext.BaseDirectory, "fixtures", "crypto-vectors.json")))
                     .RootElement.GetProperty("keys").GetProperty("rsa3072").GetProperty("privatePkcs8B64").GetString()!,
                 client.Suite),
-            Encoding.UTF8.GetBytes(canonical));
+            Encoding.UTF8.GetBytes(canonical), null);
         responseHeaders[WopHeaders.Sign] = SignHeader.Build(client.Suite.SecurityReq, 1800, signedNames, sig);
 
         var response = new HttpResponseMessage(HttpStatusCode.OK)

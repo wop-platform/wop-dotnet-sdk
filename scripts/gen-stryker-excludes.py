@@ -56,8 +56,8 @@ EQUIVALENT_LINES: dict[str, list[tuple[int, int]]] = {
     "EncryptedEnvelope.cs": [(33, 33)],
     "KeyCodec.cs":        [(59, 59)],
     "Transport.cs":       [(52, 52)],
-    "WopClient.cs":       [(85, 85), (171, 171)],
-    "WopCrypto.cs":       [(36, 36), (50, 50), (183, 186)],
+    "WopClient.cs":       [(85, 85), (172, 172)],
+    "WopCrypto.cs":       [(35, 35), (49, 49), (192, 195)],
     "AlgorithmSuite.cs":  [(40, 48)],
 }
 
@@ -76,10 +76,10 @@ ANCHORS: dict[tuple[str, int], str] = {
     ("KeyCodec.cs", 59): "if (t.Length == 0 || t.StartsWith",
     ("Transport.cs", 52): "_baseUrl = baseUrl ??",
     ("WopClient.cs", 85): "if (wireBody is { Length: > 0 })",
-    ("WopClient.cs", 171): "headers[name.ToLowerInvariant()]",
-    ("WopCrypto.cs", 36): "buffer[i] = off >= 0",
-    ("WopCrypto.cs", 50): "buffer[i] = off >= 0",
-    ("WopCrypto.cs", 183): "if (key.Length != suite.CekLength",
+    ("WopClient.cs", 172): "headers[name.ToLowerInvariant()]",
+    ("WopCrypto.cs", 35): "buffer[i] = off >= 0",
+    ("WopCrypto.cs", 49): "buffer[i] = off >= 0",
+    ("WopCrypto.cs", 192): "if (key.Length != suite.CekLength",
     ("AlgorithmSuite.cs", 40): "{",
 }
 
@@ -109,12 +109,9 @@ def iter_spans():
 
 
 def check() -> int:
-    drifted = []
-    for (name, line), prefix in sorted(ANCHORS.items()):
-        lines = read_lines(name)
-        actual = lines[line - 1].strip()
-        if not actual.startswith(prefix):
-            drifted.append(f"ANCHOR {name}:{line} 期望前缀 {prefix!r} 实际 {actual!r}")
+    drifted = [f"ANCHOR {name}:{line} 期望前缀 {prefix!r} 实际 {actual!r}"
+               for (name, line), prefix in sorted(ANCHORS.items())
+               if not (actual := read_lines(name)[line - 1].strip()).startswith(prefix)]
     if not SNAPSHOT.exists():
         print(f"区间摘要快照缺失: {SNAPSHOT}（先 --init）", file=sys.stderr)
         return 1
@@ -123,9 +120,8 @@ def check() -> int:
         if row and not row.startswith("#"):
             name, lo, hi, digest = row.split(":")
             expected[(name, int(lo), int(hi))] = digest
-    actual = {}
-    for name, lo, hi, lines in iter_spans():
-        actual[(name, lo, hi)] = span_digest(lines, lo, hi)
+    actual = {(name, lo, hi): span_digest(lines, lo, hi)
+              for name, lo, hi, lines in iter_spans()}
     if set(expected) != set(actual):
         drifted.append(f"快照区间集失配：清单 {len(actual)} vs 快照 {len(expected)}"
                        f"（差集 {set(actual) ^ set(expected)}）")
@@ -159,9 +155,7 @@ def print_spans() -> int:
 def main() -> int:
     if "--check" in sys.argv:
         return check()
-    if "--init" in sys.argv:
-        return init_snapshot()
-    return print_spans()
+    return init_snapshot() if "--init" in sys.argv else print_spans()
 
 
 if __name__ == "__main__":
