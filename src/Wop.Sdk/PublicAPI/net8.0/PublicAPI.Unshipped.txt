@@ -1,0 +1,120 @@
+#nullable enable
+Wop.Sdk.AlgorithmSuite
+Wop.Sdk.AlgorithmSuite.CekLength.get -> int
+Wop.Sdk.AlgorithmSuite.DigestTag.get -> string!
+Wop.Sdk.AlgorithmSuite.Family.get -> Wop.Sdk.SuiteFamily
+Wop.Sdk.AlgorithmSuite.IsSm2.get -> bool
+Wop.Sdk.AlgorithmSuite.KeyBits.get -> int
+Wop.Sdk.AlgorithmSuite.KeyWrapAlgorithm.get -> string!
+Wop.Sdk.AlgorithmSuite.MessageAlgorithm.get -> string!
+Wop.Sdk.AlgorithmSuite.SecurityReq.get -> string!
+Wop.Sdk.AlgorithmSuite.SignAlgorithm.get -> string!
+Wop.Sdk.AlgorithmSuite.SignatureLength.get -> int
+Wop.Sdk.CanonicalRequest
+Wop.Sdk.Codec
+Wop.Sdk.ContentDigest
+Wop.Sdk.DekPayload
+Wop.Sdk.DekPayload.Alg.get -> string!
+Wop.Sdk.DekPayload.Iv.get -> byte[]!
+Wop.Sdk.DekPayload.Key.get -> byte[]!
+Wop.Sdk.DekPayload.MatchesSuite(Wop.Sdk.AlgorithmSuite! suite) -> bool
+Wop.Sdk.EncryptHeader
+Wop.Sdk.EncryptedEnvelope
+Wop.Sdk.HttpClientTransport
+Wop.Sdk.HttpClientTransport.HttpClientTransport(System.Net.Http.HttpClient! client, string! baseUrl) -> void
+Wop.Sdk.HttpClientTransport.HttpClientTransport(System.Net.Http.HttpMessageHandler! handler, string! baseUrl) -> void
+Wop.Sdk.HttpClientTransport.HttpClientTransport(string! baseUrl) -> void
+Wop.Sdk.HttpClientTransport.Send(Wop.Sdk.RequestDraft! draft) -> Wop.Sdk.TransportResponse!
+Wop.Sdk.IWopTransport
+Wop.Sdk.IWopTransport.Send(Wop.Sdk.RequestDraft! draft) -> Wop.Sdk.TransportResponse!
+Wop.Sdk.RequestDraft
+Wop.Sdk.RequestDraft.Headers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Wop.Sdk.RequestDraft.Method.get -> string!
+Wop.Sdk.RequestDraft.Path.get -> string!
+Wop.Sdk.RequestDraft.WireBody.get -> byte[]?
+Wop.Sdk.SecurityLevel
+Wop.Sdk.SecurityLevel.L0 = 0 -> Wop.Sdk.SecurityLevel
+Wop.Sdk.SecurityLevel.L2 = 1 -> Wop.Sdk.SecurityLevel
+Wop.Sdk.SignHeader
+Wop.Sdk.SignHeader.AuthString.get -> string!
+Wop.Sdk.SignHeader.ExpiredSeconds.get -> long
+Wop.Sdk.SignHeader.ProtocolVersion.get -> string!
+Wop.Sdk.SignHeader.SecurityReq.get -> string!
+Wop.Sdk.SignHeader.Signature.get -> string!
+Wop.Sdk.SignHeader.SignedHeaders.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Wop.Sdk.SuiteFamily
+Wop.Sdk.SuiteFamily.Rsa = 0 -> Wop.Sdk.SuiteFamily
+Wop.Sdk.SuiteFamily.Sm2 = 1 -> Wop.Sdk.SuiteFamily
+Wop.Sdk.TransportResponse
+Wop.Sdk.TransportResponse.Body.get -> byte[]!
+Wop.Sdk.TransportResponse.Headers.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Wop.Sdk.TransportResponse.StatusCode.get -> int
+Wop.Sdk.TransportResponse.TransportResponse(int statusCode, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! headers, byte[]! body) -> void
+Wop.Sdk.VerifyResult
+Wop.Sdk.VerifyResult.ErrorCode.get -> Wop.Sdk.WopErrorCode?
+Wop.Sdk.VerifyResult.Ok.get -> bool
+Wop.Sdk.VerifyResult.Plaintext.get -> byte[]?
+Wop.Sdk.VerifyResult.Reason.get -> string?
+Wop.Sdk.WopClient
+Wop.Sdk.WopClient.BuildRequest(string! method, string! path, byte[]? body, Wop.Sdk.SecurityLevel level) -> Wop.Sdk.RequestDraft!
+Wop.Sdk.WopClient.Execute(Wop.Sdk.IWopTransport! transport, string! method, string! path, byte[]? body, Wop.Sdk.SecurityLevel level) -> (Wop.Sdk.VerifyResult! Result, Wop.Sdk.TransportResponse! Response)
+Wop.Sdk.WopClient.Suite.get -> Wop.Sdk.AlgorithmSuite!
+Wop.Sdk.WopClient.VerifyCallback(string! callbackUrl, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string!>>! headers, byte[]? body) -> Wop.Sdk.VerifyResult!
+Wop.Sdk.WopClient.VerifyResponse(string! method, string! path, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string!>>! headers, byte[]? body) -> Wop.Sdk.VerifyResult!
+Wop.Sdk.WopClientBuilder
+Wop.Sdk.WopClientBuilder.AppKey(string! appKey) -> Wop.Sdk.WopClientBuilder!
+Wop.Sdk.WopClientBuilder.Build() -> Wop.Sdk.WopClient!
+Wop.Sdk.WopClientBuilder.ExpiredSeconds(long seconds) -> Wop.Sdk.WopClientBuilder!
+Wop.Sdk.WopClientBuilder.GatewayBaseUrl(string! baseUrl) -> Wop.Sdk.WopClientBuilder!
+Wop.Sdk.WopClientBuilder.MerchantPrivateKey(string! material) -> Wop.Sdk.WopClientBuilder!
+Wop.Sdk.WopClientBuilder.PlatformPublicKey(string! material) -> Wop.Sdk.WopClientBuilder!
+Wop.Sdk.WopClientBuilder.Suite(string! securityReq) -> Wop.Sdk.WopClientBuilder!
+Wop.Sdk.WopClientBuilder.WopClientBuilder() -> void
+Wop.Sdk.WopErrorCode
+Wop.Sdk.WopErrorCode.AlgMismatch = 7 -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopErrorCode.Config = 0 -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopErrorCode.DecryptFailed = 6 -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopErrorCode.DigestMismatch = 4 -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopErrorCode.Protocol = 3 -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopErrorCode.SuiteParse = 1 -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopErrorCode.SuiteUnsupported = 2 -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopErrorCode.VerifyFailed = 5 -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopException
+Wop.Sdk.WopException.ErrorCode.get -> Wop.Sdk.WopErrorCode
+Wop.Sdk.WopException.WopException(Wop.Sdk.WopErrorCode errorCode, string! message) -> void
+Wop.Sdk.WopHeaders
+Wop.Sdk.WopSignProtocol
+const Wop.Sdk.HttpClientTransport.MaxResponseBytes = 11534336 -> int
+const Wop.Sdk.WopHeaders.AppKey = "x-wop-appkey" -> string!
+const Wop.Sdk.WopHeaders.ContentDigest = "x-wop-content-digest" -> string!
+const Wop.Sdk.WopHeaders.Encrypt = "x-wop-encrypt" -> string!
+const Wop.Sdk.WopHeaders.Nonce = "x-wop-nonce" -> string!
+const Wop.Sdk.WopHeaders.Sign = "x-wop-sign" -> string!
+const Wop.Sdk.WopHeaders.Timestamp = "x-wop-timestamp" -> string!
+const Wop.Sdk.WopSignProtocol.ExpiredSecondsDefault = 1800 -> long
+const Wop.Sdk.WopSignProtocol.ExpiredSecondsMax = 86400 -> long
+const Wop.Sdk.WopSignProtocol.Version = "v1" -> string!
+override Wop.Sdk.WopException.ToString() -> string!
+static Wop.Sdk.AlgorithmSuite.Parse(string! securityReq) -> Wop.Sdk.AlgorithmSuite!
+static Wop.Sdk.CanonicalRequest.Build(string! authString, string! method, string! canonicalUri, string! canonicalQueryString, string! canonicalHeaders) -> string!
+static Wop.Sdk.CanonicalRequest.CanonicalHeaders(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! headers) -> string!
+static Wop.Sdk.Codec.DecodeB64Url(string! s) -> byte[]!
+static Wop.Sdk.Codec.EncodeB64Url(byte[]! data) -> string!
+static Wop.Sdk.Codec.LowerHex(byte[]! data) -> string!
+static Wop.Sdk.Codec.TrimAll(string! s) -> string!
+static Wop.Sdk.Codec.UrlEncodeJava(string! s) -> string!
+static Wop.Sdk.ContentDigest.BuildHeaderValue(Wop.Sdk.AlgorithmSuite! suite, byte[]! data) -> string!
+static Wop.Sdk.ContentDigest.Compute(Wop.Sdk.AlgorithmSuite! suite, byte[]! data) -> byte[]!
+static Wop.Sdk.ContentDigest.Parse(string! value) -> (string! Tag, string! Hex)
+static Wop.Sdk.ContentDigest.Validate(Wop.Sdk.AlgorithmSuite! suite, string! headerValue, byte[]! wireBody) -> void
+static Wop.Sdk.ContentDigest.ValidateHeader(Wop.Sdk.AlgorithmSuite! suite, string! headerValue) -> void
+static Wop.Sdk.DekPayload.Encode(string! alg, byte[]! key, byte[]! iv) -> string!
+static Wop.Sdk.DekPayload.Parse(string! payload) -> Wop.Sdk.DekPayload!
+static Wop.Sdk.EncryptHeader.BuildL2(string! dekB64Url) -> string!
+static Wop.Sdk.EncryptHeader.Parse(string! value) -> (string! Level, string! DekB64Url)
+static Wop.Sdk.EncryptedEnvelope.Extract(byte[]! wireBody) -> string!
+static Wop.Sdk.EncryptedEnvelope.Wrap(string! cipherB64Url) -> byte[]!
+static Wop.Sdk.SignHeader.Build(string! securityReq, long expiredSeconds, System.Collections.Generic.IReadOnlyList<string!>! signedHeaders, string! signature) -> string!
+static Wop.Sdk.SignHeader.Parse(string! header) -> Wop.Sdk.SignHeader!
+static Wop.Sdk.WopClient.Builder() -> Wop.Sdk.WopClientBuilder!
+static Wop.Sdk.WopException.Fuzzy(Wop.Sdk.WopErrorCode code) -> Wop.Sdk.WopException!

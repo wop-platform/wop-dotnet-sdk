@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 公共 API 快照生成器（dev 工具，不进主库依赖图与打包链）。
+       输出格式逐字复刻 Microsoft.CodeAnalysis.PublicApiAnalyzers 3.3.4 的行格式
+       （s_publicApiFormatWithNullability + " -> " + 成员类型），生成后由
+       `dotnet build -warnaserror` 的 RS0016/RS0017 兜底校准。 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Wop.Sdk.Tools.GenPublicApi</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Workspaces.MsBuild 钉 4.8.0：匹配 CI 最低档 SDK 8.0.x（Roslyn 4.8），
+         保证低档 SDK 上也能本地再生成快照。 -->
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.11.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MsBuild" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
