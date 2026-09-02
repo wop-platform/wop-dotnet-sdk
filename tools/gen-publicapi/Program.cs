@@ -18,12 +18,12 @@ using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 
-if (args.Length > 1)
+if (args.Length > 1 || (args.Length == 1 && args[0] != "--check"))
 {
     Console.Error.WriteLine("用法：dotnet run --project tools/gen-publicapi [--check]");
     return 2;
 }
-bool checkOnly = args.Length == 1 && args[0] == "--check";
+bool checkOnly = args.Length == 1;
 
 MSBuildLocator.RegisterDefaults();
 
@@ -62,13 +62,23 @@ foreach (var tfm in tfms)
     var unshipped = Path.Combine(apiDir, "PublicAPI.Unshipped.txt");
     var shipped = Path.Combine(apiDir, "PublicAPI.Shipped.txt");
 
+    // 投影：Unshipped 只记尚未发布（不在 Shipped）的 API。Shipped 记录已发布历史，
+    // 由发布流程在发版时移入；生成器只读不写——清空会丢失已发布 API 的删除/签名变更
+    // 检查（RS0017），且 analyzer 将 Shipped+Unshipped 合表校验，重复条目直接报错。
+    var shippedApis = LoadApiEntries(shipped);
+    lines.ExceptWith(shippedApis);
+
     var content = "#nullable enable" + Environment.NewLine
         + string.Join(Environment.NewLine, lines) + Environment.NewLine;
 
     if (checkOnly)
     {
-        var current = File.Exists(unshipped) ? File.ReadAllText(unshipped) : "";
-        if (!string.Equals(Normalize(current), Normalize(content), StringComparison.Ordinal))
+        bool drift = !File.Exists(shipped)
+            || !string.Equals(
+                Normalize(File.Exists(unshipped) ? File.ReadAllText(unshipped) : ""),
+                Normalize(content),
+                StringComparison.Ordinal);
+        if (drift)
         {
             Console.Error.WriteLine($"[{tfm}] 公共 API 快照漂移：{unshipped} 与当前代码不一致，请再生成并随变更一并提交。");
             mismatches++;
@@ -77,13 +87,31 @@ foreach (var tfm in tfms)
     }
 
     Directory.CreateDirectory(apiDir);
-    // Shipped 留空（未发版面）：当前所有 API 均为 Unshipped。
-    File.WriteAllText(shipped, "#nullable enable" + Environment.NewLine);
+    // Shipped 存在则原样保留（只读）；缺失时以空快照初始化（analyzer 要求双文件齐全）。
+    if (!File.Exists(shipped))
+        File.WriteAllText(shipped, "#nullable enable" + Environment.NewLine);
     File.WriteAllText(unshipped, content);
     Console.WriteLine($"[{tfm}] 生成 {lines.Count} 行 API -> {Path.GetRelativePath(repoRoot, unshipped)}");
 }
 
 return checkOnly ? (mismatches == 0 ? 0 : 1) : 0;
+
+// 解析快照中的 API 条目（同 analyzer ReadApiData）：跳过空白行与 '#nullable enable'
+// 标记行；Shipped 不允许 RemovedApi 前缀行（analyzer 校验），无需特判。
+static SortedSet<string> LoadApiEntries(string path)
+{
+    var entries = new SortedSet<string>(StringComparer.Ordinal);
+    if (!File.Exists(path))
+        return entries;
+    foreach (var line in File.ReadAllLines(path))
+    {
+        var text = line.Trim();
+        if (text.Length == 0 || text == "#nullable enable")
+            continue;
+        entries.Add(text);
+    }
+    return entries;
+}
 
 static string Normalize(string s) => s.Replace("\r\n", "\n").TrimEnd('\n');
 
@@ -196,7 +224,10 @@ static bool IsTrackedPublicApi(ISymbol symbol)
     if (resultant != ApiGate.Vis.Public)
         return false;
 
-    for (var current = symbol; current is INamedTypeSymbol; current = current.ContainingType)
+    // 与 analyzer IsTrackedApiCore 一致：从任意 ISymbol（含成员）沿 ContainingType
+    // 遍历至 null。成员所在容器链若含 protected / protected-or-internal 嵌套类型且
+    // 外层不可继承，analyzer 不跟踪该成员——只遍历 INamedTypeSymbol 会漏检并多写快照。
+    for (var current = symbol; current != null; current = current.ContainingType)
     {
         switch (current.DeclaredAccessibility)
         {
