@@ -50,7 +50,29 @@ dotnet test tests/Wop.Sdk.Tests/Wop.Sdk.Tests.csproj -f net8.0 --no-restore \
 - **警告即错误**：任何编译警告都会使构建失败，提交前先本地跑通上述四步。
 - 覆盖率闭合必须在**全部语义变更之后**做终局测量——中途达标的数字会被后续分支稀释。
 
-## 3. 黄金向量纪律（不可妥协）
+## 3. 公共 API 快照门禁（RS0016/RS0017）
+
+主库挂有 `Microsoft.CodeAnalysis.PublicApiAnalyzers`（dev 分析器，PrivateAssets=all，不进运行时依赖）。
+公共 API 面以 `src/Wop.Sdk/PublicAPI/<tfm>/` 下的快照文件为准（按 TFM 分目录；Shipped 记已发版面，当前为空，全部 API 在 Unshipped）：
+
+- **RS0016**：新增公共成员未声明 → `dotnet build -warnaserror` 报 error（新增必须显式落快照）
+- **RS0017**：删除/改名公共成员后快照残留 → 同上报 error（破坏性变更必须显式确认）
+
+CI 的两处 `dotnet build -warnaserror`（全 TFM + netstandard2.0 断言）即门禁执行点，无独立 job。
+
+**如何显式更新快照**：快照行格式与 analyzer 逐字耦合，禁止手改 txt；用再生成工具：
+
+```bash
+# 再生成两档 TFM 快照（tools/gen-publicapi，复刻 analyzer 3.3.4 行格式）
+dotnet run --project tools/gen-publicapi
+
+# 仅检测漂移不落盘（exit 0 = 零漂移）
+dotnet run --project tools/gen-publicapi -- --check
+```
+
+再生成后把 txt 与代码变更放进**同一个 commit**——快照即 API 变更的显式批准记录。
+
+## 4. 黄金向量纪律（不可妥协）
 
 `tests/Wop.Sdk.Tests/fixtures/crypto-vectors.json` 是与网关 CI 同源的黄金向量副本，是**协议正确性的唯一锚点，禁止手改**。
 
@@ -59,7 +81,7 @@ dotnet test tests/Wop.Sdk.Tests/Wop.Sdk.Tests.csproj -f net8.0 --no-restore \
 - **新增协议行为**：必须先在网关真源（`gtsp-wop-gateway`）更新向量并重新导出 fixture 副本，再同步本仓全量消费测试；不允许为迁就实现反向修向量。
 - 拒绝行为（负向量）也要有测试钉住——"拒绝"本身是契约。
 
-## 4. 编码规范
+## 5. 编码规范
 
 C# 惯例（本仓已定型，沿用勿另起炉灶）：
 
@@ -82,7 +104,7 @@ C# 惯例（本仓已定型，沿用勿另起炉灶）：
 | F9 防重放 | CSPRNG nonce、毫秒时间戳、expiredSeconds 组装 |
 | I7 错误模糊 | 配置/解析类错误**明确**（`CONFIG`/`SUITE_PARSE`/`SUITE_UNSUPPORTED`/`PROTOCOL`/`DIGEST_MISMATCH`/`ALG_MISMATCH`）；验签失败 `VERIFY_FAILED`、解密失败 `DECRYPT_FAILED` 对外文案钉死不区分原因（防 oracle） |
 
-## 5. 提交规范
+## 6. 提交规范
 
 Conventional Commits，正文（body）用中文：
 
@@ -95,14 +117,14 @@ feat(transport): 新增连接池生命周期配置
 
 类型限定：`feat` / `fix` / `test` / `docs` / `chore`（协议行为变更用 `feat` 或 `fix`，并在 body 指明对应功能面编号，如 "F6"）。
 
-## 6. PR 流程
+## 7. PR 流程
 
 1. 基于最新 `main` 创建分支，提交 PR 到 `main`。
 2. CI 必须全绿：**构建零警告 + 行&分支覆盖率 ≥ 98% + 向量合规测试全绿**——三项缺一不可，不合并红灯 PR。
 3. 至少一名 reviewer 复核通过；涉及协议核心（`src/Wop.Sdk` 下签名/digest/信封/校验顺序）的变更必须说明对应 spec 条款与测试锚点。
-4. 触碰 fixture 的 PR 一律拒绝（见 §3）。
+4. 触碰 fixture 的 PR 一律拒绝（见 §4）。
 
-## 7. 发布流程
+## 8. 发布流程
 
 - 版本号遵循 SemVer。发布 = 打 tag `vX.Y.Z` 并推送，触发 [.github/workflows/release.yml](.github/workflows/release.yml)：
   checkout → 装配 .NET 8 → 复用 CI 同款 restore/build/test（全绿才继续）→ `dotnet pack -c Release`（包版本取自 tag）→ `dotnet nuget push` 至 `https://api.nuget.org/v3/index.json`。

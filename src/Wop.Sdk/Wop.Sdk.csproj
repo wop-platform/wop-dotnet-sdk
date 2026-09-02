@@ -28,6 +28,19 @@
   <ItemGroup>
     <None Include="..\..\README.en.md" Pack="true" PackagePath="\" />
   </ItemGroup>
+  <!-- 公共 API 快照门禁（wop-platform 统一纪律，对齐 wop-typescript-sdk api-extractor 模式）：
+       RS0016（新增未声明）/RS0017（删除未声明）经 TreatWarningsAsErrors 升 error，CI 的
+       dotnet build -warnaserror 即门禁执行点。快照按 TFM 分目录（当前两档公共面恰好一致，
+       但 internal 面存在 #if NET8_0 差异，per-TFM 目录为未来公共面分叉预留且零成本）。
+       根目录不放 txt：包 props 的自动注入按根目录探测，探测不到即由下方手动注入接管。
+       再生成工具：tools/gen-publicapi（见 CONTRIBUTING「公共 API 快照」）。 -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="PublicAPI/$(TargetFramework)/PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI/$(TargetFramework)/PublicAPI.Unshipped.txt" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
