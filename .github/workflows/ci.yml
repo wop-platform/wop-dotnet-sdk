@@ -16,13 +16,22 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        # SDK 档 ↔ 测试 TFM 成对（8.0.x→net8.0 / 9.0.x→net9.0）：
+        # SDK 8 无法构建 net9.0 目标（NETSDK1045），verify action 按档限域
+        dotnet:
+          - version: '8.0.x'
+            framework: 'net8.0'
+          - version: '9.0.x'
+            framework: 'net9.0'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
 
       - name: Verify (build + tests + coverage gate)
         uses: ./.github/actions/verify
-
+        with:
+          dotnet-version: ${{ matrix.dotnet.version }}
+          test-framework: ${{ matrix.dotnet.framework }}
   # 等价清单锚点漂移检测（wop-specs D7）：scripts/gen-stryker-excludes.py --check
   # 校验等价排除清单的行号锚未随源码演进漂移——漂移会使 Stryker span 排除静默
   # 失指（config mutate 键本就忽略 span，见 stryker-mutator/stryker-net#3814，

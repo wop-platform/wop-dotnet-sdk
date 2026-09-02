@@ -8,8 +8,8 @@
 
 | 项 | 要求 |
 |----|------|
-| .NET SDK | **8.0.x**（CI 与本地一致；`netstandard2.0` 目标的引用程序集由 `Microsoft.NETFramework.ReferenceAssemblies` 自动补齐） |
-| 目标框架 | `net8.0` + `netstandard2.0` 多目标（`src/Wop.Sdk/Wop.Sdk.csproj`） |
+| .NET SDK | **8.0.x / 9.0.x**（CI 矩阵成对：SDK 档↔测试档 8.0.x→`net8.0`、9.0.x→`net9.0`；本地全量门用 9.0.x。`netstandard2.0` 目标的引用程序集由 `Microsoft.NETFramework.ReferenceAssemblies` 自动补齐） |
+| 目标框架 | 主库 `net8.0` + `netstandard2.0` 多目标（`src/Wop.Sdk/Wop.Sdk.csproj`）；测试项目 `net8.0;net9.0` 多目标（`tests/Wop.Sdk.Tests`） |
 | 密码依赖 | [BouncyCastle.Cryptography](https://www.nuget.org/packages/BouncyCastle.Cryptography) 2.5.1（唯一指定路径，E5；禁止引入其他密码库） |
 | 测试栈 | xUnit 2.9.2 + Microsoft.NET.Test.Sdk 17.11.1 + coverlet.msbuild 6.0.2 |
 | 解决方案 | 根目录 `Wop.Sdk.sln`（`src/Wop.Sdk` + `tests/Wop.Sdk.Tests`） |
@@ -22,25 +22,32 @@ export PATH="$HOME/.dotnet:$PATH"
 
 ## 2. 构建与测试
 
-命令与 `.github/workflows/ci.yml` **逐字一致**（CI 即唯一真源，勿凭记忆写命令）：
+命令与 `.github/actions/verify/action.yml` **逐字一致**（CI 即唯一真源，勿凭记忆写命令）。
+SDK 8.0.x 无法还原/构建 `net9.0` 目标（NETSDK1045），故测试项目 restore/test 按档 `-f` 限域
+（`net8.0` 档示例；net9.0 档换 `-f net9.0` 并配 9.0.x SDK）：
 
 ```bash
-# ① 还原
-dotnet restore
+# ① 还原（测试项目按档收窄；restore 无 -f 用 -p:TargetFrameworks，且全局属性会
+#    传导进项目引用剪掉主库 TFM——主库全 TFM restore 必须放最后）
+dotnet restore tests/Wop.Sdk.Tests/Wop.Sdk.Tests.csproj -p:TargetFrameworks=net8.0
+dotnet restore src/Wop.Sdk/Wop.Sdk.csproj
 
-# ② 构建（零警告容忍：-warnaserror + csproj 内 TreatWarningsAsErrors）
-dotnet build --no-restore -warnaserror
+# ② 主库全 TFM 构建（零警告容忍：-warnaserror + csproj 内 TreatWarningsAsErrors）
+dotnet build src/Wop.Sdk/Wop.Sdk.csproj --no-restore -warnaserror
 
-# ③ 测试 + 覆盖率门禁（行 & 分支双阈值）
-dotnet test --no-build \
-  /p:CollectCoverage=true \
-  /p:Threshold=98 \
-  /p:ThresholdType=both \
-  /p:CoverletOutputFormat=opencover
+# ③ netstandard2.0 编译断言（老 TFM 消费面，显式钉死）
+dotnet build src/Wop.Sdk/Wop.Sdk.csproj -f netstandard2.0 --no-restore -warnaserror
+
+# ④ 测试 + 覆盖率门禁（行 & 分支双阈值；不可 --no-build——coverlet 插桩在 build 阶段注入）
+dotnet test tests/Wop.Sdk.Tests/Wop.Sdk.Tests.csproj -f net8.0 --no-restore \
+  -p:CollectCoverage=true \
+  -p:Threshold=98 \
+  '-p:ThresholdType="line,branch"' \
+  -p:CoverletOutputFormat=opencover
 ```
 
-- **覆盖率门禁**：coverlet 按 `ThresholdType=both` 同时校验**行覆盖率与分支覆盖率**，任一低于 **98%** 即测试步骤失败；工作目标为 100%。
-- **警告即错误**：任何编译警告都会使构建失败，提交前先本地跑通上述三步。
+- **覆盖率门禁**：coverlet 同时校验**行覆盖率与分支覆盖率**，任一低于 **98%** 即测试步骤失败；工作目标为 100%。`ThresholdType` 只认 `line`/`branch`/`method`——`both` 是非法值会被静默忽略，CI 实际钉 `"line,branch"`（内层引号防 MSBuild 逗号分词）。
+- **警告即错误**：任何编译警告都会使构建失败，提交前先本地跑通上述四步。
 - 覆盖率闭合必须在**全部语义变更之后**做终局测量——中途达标的数字会被后续分支稀释。
 
 ## 3. 黄金向量纪律（不可妥协）

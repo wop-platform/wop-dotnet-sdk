@@ -148,13 +148,11 @@ public class MutationKillBoundaryTests
 
         public override void NextBytes(byte[] bytes) => Fill(bytes);
 
-#if NET8_0
         public override void NextBytes(Span<byte> buffer)
         {
             var tmp = new byte[buffer.Length];
             Fill(tmp);
             tmp.CopyTo(buffer);
         }
-#endif
     }
 }

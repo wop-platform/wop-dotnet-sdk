@@ -1,11 +1,15 @@
 name: 'verify'
-description: 'Wop.Sdk 统一验证段：restore + 零警告构建 + 覆盖率门禁（ci 与 release 单源引用）'
+description: 'Wop.Sdk 统一验证段：restore + 零警告构建（含 netstandard2.0 断言）+ 覆盖率门禁（ci 与 release 单源引用）'
 
 inputs:
   dotnet-version:
     description: '.NET SDK 版本'
     required: false
     default: '8.0.x'
+  test-framework:
+    description: '测试档 TFM（net8.0 / net9.0），restore 与 test 均按档限域'
+    required: false
+    default: 'net8.0'
 
 runs:
   using: 'composite'
@@ -15,13 +19,27 @@ runs:
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
-    - name: Restore
+    # 测试项目多目标 net8.0;net9.0：SDK 8 档还原/构建 net9.0 目标必失败
+    # （NETSDK1045），故测试项目按档收窄（restore 无 -f，用 -p:TargetFrameworks）。
+    # 次序钉死：收窄 restore 的全局属性会传导进项目引用（主库被剪档），
+    # 主库全 TFM restore 必须放最后，保证 assets 终态含 netstandard2.0
+    - name: Restore (test 按档收窄 → lib 全 TFM 收尾)
       shell: bash
-      run: dotnet restore
+      run: |
+        dotnet restore tests/Wop.Sdk.Tests/Wop.Sdk.Tests.csproj -p:TargetFrameworks=${{ inputs.test-framework }}
+        dotnet restore src/Wop.Sdk/Wop.Sdk.csproj
 
-    - name: Build (zero warnings tolerated)
+    # 主库全 TFM 零警告构建（测试项目由 dotnet test 构建并自带
+    # TreatWarningsAsErrors=true，等效零警告纪律）
+    - name: Build lib (zero warnings tolerated)
       shell: bash
-      run: dotnet build --no-restore -warnaserror
+      run: dotnet build src/Wop.Sdk/Wop.Sdk.csproj --no-restore -warnaserror
+
+    # 断言 netstandard2.0 目标编译零错误（主库老 TFM 消费面，仅编译不跑测试；
+    # 显式钉死 -f netstandard2.0，防多目标漂移后静默跳过）
+    - name: netstandard2.0 compile assertion
+      shell: bash
+      run: dotnet build src/Wop.Sdk/Wop.Sdk.csproj -f netstandard2.0 --no-restore -warnaserror
 
     # 门禁纪律：不可用 --no-build（coverlet 插桩在 build 阶段注入）；
     # ThresholdType 只认 line/branch/method，"both" 是非法值会被静默忽略；
@@ -29,7 +47,8 @@ runs:
     - name: Test + coverage gate (line & branch >= 98%, vector conformance)
       shell: bash
       run: >
-        dotnet test --no-restore
+        dotnet test tests/Wop.Sdk.Tests/Wop.Sdk.Tests.csproj -f ${{ inputs.test-framework }}
+        --no-restore
         -p:CollectCoverage=true
         -p:Threshold=98
         '-p:ThresholdType="line,branch"'

@@ -16,8 +16,8 @@ using Xunit;
 // （positive 明文一致，negative 逐条对账 canonical class）。
 public class InteropConformanceTests
 {
-    // 真源 sha256（wop-specs/interop/v1/interop-cases.json，2026-08-29 冻结）
-    const string FixtureSha256 = "3030e98fa6174f1ca905f35d7742ac9471141945dde66f29f01021d51a555f7a";
+    // 真源 sha256（wop-specs/interop/v1/interop-cases.json，2026-09-02 冻结，30 条含 n17）
+    const string FixtureSha256 = "c920ca1a93ccb3899a659f59fed6ec4652cf9e1b3b58bbdac23c45ac3ed2353e";
 
     static readonly Lazy<byte[]> FixtureBytes = new(() => File.ReadAllBytes(
         Path.Combine(AppContext.BaseDirectory, "fixtures", "interop-cases.json")));
@@ -46,12 +46,12 @@ public class InteropConformanceTests
     {
         var f = Fixture.Value;
         Assert.Equal("wop-interop-1", f.Meta!.Format);
-        Assert.Equal(29, f.Meta.CaseCount);
-        Assert.Equal(29, f.Cases!.Count);
+        Assert.Equal(30, f.Meta.CaseCount);
+        Assert.Equal(30, f.Cases!.Count);
         Assert.Equal(6, f.Cases.Count(c => c.Kind == "build"));
         Assert.Equal(7, f.Cases.Count(c => c.Kind == "verify-positive"));
-        Assert.Equal(16, f.Cases.Count(c => c.Kind == "verify-negative"));
-        // 已知 id 哨兵：集合恰为已知 29 条（fixture 漂移 / 新增未登记用例即失败）
+        Assert.Equal(17, f.Cases.Count(c => c.Kind == "verify-negative"));
+        // 已知 id 哨兵：集合恰为已知 30 条（fixture 漂移 / 新增未登记用例即失败）
         Assert.Equal(KnownIds(), new HashSet<string>(f.Cases.Select(c => c.Id)));
     }
 
@@ -128,7 +128,7 @@ public class InteropConformanceTests
             Assert.True(gotClass == c.Expect!.ErrorClass,
                 c.Id + ": 错误分类 = " + gotClass + "（" + result.ErrorCode + "），应为 " + c.Expect.ErrorClass);
         }
-        Assert.Equal(16, neg);
+        Assert.Equal(17, neg);
     }
 
     /// <summary>本仓错误码 → 跨仓 canonical class 显式映射表
@@ -203,7 +203,7 @@ public class InteropConformanceTests
         "build:WOP-SM2-SM3:L0", "build:WOP-SM2-SM3:L2",
         // verify-positive（7）
         "p07", "p08", "p09", "p10", "p11", "p12", "p13",
-        // verify-negative（16）
+        // verify-negative（17）
         "n01-encrypted-char-damage", "n02-wire-tampered-after-signing",
         "n03-digest-tag-cross-family", "n04-dek-alg-cross-family",
         "n05-dek-c1c2c3-order", "n06-signature-b64-padding",
@@ -212,6 +212,7 @@ public class InteropConformanceTests
         "n11-suite-mismatch", "n12-envelope-missing-field",
         "n13-dek-key-length", "n14-missing-signed-header",
         "n15-digest-without-body", "n16-replay-cross-path",
+        "n17-encrypt-missing-dek",
     };
 }
 
