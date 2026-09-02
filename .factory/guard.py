@@ -56,31 +56,44 @@ def self_check() -> None:
 
     防两类静默失效：人工只改一边造成锁漂移；周界指向已移动/删除的路径
     （如目录重构后清单未跟随，实际保护对象悄然消失）。两者均为 exit 2。
+    存在性豁免 gitignored 路径：fresh clone 检不出它们且无主树可回退，
+    缺失是正常态而非漂移；非忽略路径缺失仍视为漂移拦截。
     """
     text = (REPO_ROOT / "MISSION.md").read_text(encoding="utf-8")
     m = re.search(r"## 周界（PERIMETER）(.*?)(?=\n## |\Z)", text, re.S)
     if not m:
         raise RuntimeError("MISSION.md 缺少「## 周界（PERIMETER）」一节")
-    mission_paths = {p for p in re.findall(r"`([^`\n]+)`", m.group(1)) if p.strip()}
+    mission_paths = {p for p in re.findall(r"`([^`\n]+)`", m[1]) if p.strip()}
     guard_paths = set(PERIMETER)
     if mission_paths != guard_paths:
         raise RuntimeError(
-            "PERIMETER 与 MISSION.md 周界清单不一致（MISSION 独有: %s；guard 独有: %s）"
-            % (sorted(mission_paths - guard_paths), sorted(guard_paths - mission_paths))
+            f"PERIMETER 与 MISSION.md 周界清单不一致（MISSION 独有: {sorted(mission_paths - guard_paths)}；guard 独有: {sorted(guard_paths - mission_paths)}）"
         )
-    # worktree 兼容：未跟踪配置目录（.crush/ 等）可能未检出本 worktree，
-    # 但存在于主工作树——存在性 = 当前树 ∪ 主树（M-02 的"从未存在"仍拦）
+    # 存在性三态（fresh-clone 容错 + worktree 兼容）：
+    #   gitignored（.crush/、.vscode/ 等本机配置）→ 不要求存在——fresh
+    #   clone 检不出且无主树可回退，缺失是正常态非漂移；
+    #   其余 → 当前树 ∪ 主工作树（未跟踪非忽略目录可能只在主树）；
+    #   两边皆缺且非 ignored → M-02 的「从未存在」，仍拦。
     import subprocess
     main_root = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "rev-parse", "--path-format=absolute", "--git-common-dir"],
         capture_output=True, text=True,
     ).stdout.strip().removesuffix("/.git")
-    missing = [
-        p for p in sorted(guard_paths)
+    if absent := [
+        p
+        for p in sorted(guard_paths)
         if not (REPO_ROOT / p).exists() and not (Path(main_root) / p).exists()
-    ]
-    if missing:
-        raise RuntimeError(f"周界路径不存在（疑似漂移）: {missing}")
+    ]:
+        # check-ignore 批量豁免（rc 0=有命中 1=全否）；git 失败 fail-closed
+        ci = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "check-ignore", "--stdin"],
+            input="\n".join(absent), capture_output=True, text=True,
+        )
+        if ci.returncode not in (0, 1):
+            raise RuntimeError(f"git check-ignore 异常（fail-closed）: rc={ci.returncode}")
+        ignored = {line.rstrip("/") for line in ci.stdout.splitlines() if line.strip()}
+        if missing := [p for p in absent if p.rstrip("/") not in ignored]:
+            raise RuntimeError(f"周界路径不存在（疑似漂移）: {missing}")
 
 
 def normalize(path: str) -> str:
@@ -91,20 +104,18 @@ def normalize(path: str) -> str:
     .github/、.gitignore）整体失效（2026-08-25 ADR-007 移植实测；
     上游 mutations 锚点无点文件故未暴露）。"""
     p = path.strip().replace("\\", "/")
-    if p.startswith("./"):
-        p = p[2:]
-    return p
+    return p.removeprefix("./")
 
 
 def violates(path: str) -> str | None:
     """命中周界则返回命中的前缀，否则 None。目录以路径前缀匹配。"""
-    p = normalize(path)
-    if not p:
+    if p := normalize(path):
+        return next(
+            (entry for entry in PERIMETER if p == entry or p.startswith(entry)),
+            None,
+        )
+    else:
         return None
-    for entry in PERIMETER:
-        if p == entry or p.startswith(entry):
-            return entry
-    return None
 
 
 def diff_names(base: str, head: str) -> list[str]:
@@ -126,10 +137,8 @@ def main(argv: list[str]) -> int:
     paths: list[str]
     if len(argv) >= 3 and argv[1] == "--base":
         base = argv[2]
-        head = "HEAD"
         rest = argv[3:]
-        if rest and rest[0] == "--head" and len(rest) >= 2:
-            head = rest[1]
+        head = rest[1] if rest and rest[0] == "--head" and len(rest) >= 2 else "HEAD"
         paths = diff_names(base, head)
     elif len(argv) >= 3 and argv[1] == "--files":
         paths = argv[2:]
@@ -141,8 +150,7 @@ def main(argv: list[str]) -> int:
 
     hits: list[tuple[str, str]] = []
     for path in paths:
-        entry = violates(path)
-        if entry:
+        if entry := violates(path):
             hits.append((path, entry))
 
     if hits:
