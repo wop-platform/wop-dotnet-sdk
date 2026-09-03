@@ -29,6 +29,7 @@
     "b": "判据b（可判定）：把完成标准写成可机械验证的形式——验收 = 具体测试的断言（dotnet test 中的测试类/方法名、逐条清单、file:line 级差异），避免「持续 / 优化 / 修收」类开放措辞；doc-only（纯文档）改动在验证门零投影——补可断言测试或转人工 PR；",
     "c": "判据c（不触周界）：触及 PERIMETER 的部分拆成独立 issue 走人类 PR（清单见 MISSION.md；安全敏感面 src/ 下加解密/签名/摘要/canonical 基构造文件默认全锁）；"
   },
+  "port_point": "4a2c58c",
   "repo_identity": "wop-dotnet-sdk",
   "reading_scopes": [
     "README.md",
