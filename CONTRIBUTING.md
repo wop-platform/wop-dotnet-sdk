@@ -1,7 +1,7 @@
 # 贡献指南（CONTRIBUTING）
 
 感谢参与 **WOP 商户官方 .NET SDK**（`Wop.Sdk`）的开发！本仓库是 WOP 网关商户侧官方客户端库，
-实现对齐 [WOP SDK 规格 v1.0-ratified](https://github.com/wop-platform/gtsp-wop-gateway/blob/main/docs/wop-sdk-spec.md)（功能面 F1–F9、验收 A1–A7、工程约定 §4）。
+实现对齐 [WOP SDK 规格 v1.0-ratified](https://github.com/wop-platform/wop-specs/blob/main/docs/specs/wop-sdk-spec.md)（功能面 F1–F9、验收 A1–A7、工程约定 §4）。
 协议核心（套件解析、canonicalRequest、结构化签名、content-digest、L2 数字信封、验签解密）与 HttpClient 适配层均在 98% 覆盖率门禁之内。
 
 ## 1. 开发环境
@@ -78,7 +78,7 @@ dotnet run --project tools/gen-publicapi -- --check
 
 - 正向量必须**字节级**一致：digest、AES-256-GCM / SM4-GCM（固定 key/iv）、RSA3072/4096 签名、SM2 签名与加密、OAEP 解包、SM2 解密。
 - 负向量必须全部拒绝：tamper、63/65 字节签名、带 `=` 的 base64url、跨族 digest/dek、C1C2C3 顺序密文、MGF1-SHA1 陷阱（OAEP 显式双 SHA-256 钉子）、DER 签名、off-curve 公钥点。
-- **新增协议行为**：必须先在网关真源（`gtsp-wop-gateway`）更新向量并重新导出 fixture 副本，再同步本仓全量消费测试；不允许为迁就实现反向修向量。
+- **新增协议行为**：必须先在网关真源（`内部网关仓`）更新向量并重新导出 fixture 副本，再同步本仓全量消费测试；不允许为迁就实现反向修向量。
 - 拒绝行为（负向量）也要有测试钉住——"拒绝"本身是契约。
 
 ## 5. 编码规范
