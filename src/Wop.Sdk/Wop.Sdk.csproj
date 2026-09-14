@@ -35,7 +35,7 @@
        根目录不放 txt：包 props 的自动注入按根目录探测，探测不到即由下方手动注入接管。
        再生成工具：tools/gen-publicapi（见 CONTRIBUTING「公共 API 快照」）。 -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="PublicAPI/$(TargetFramework)/PublicAPI.Shipped.txt" />
