@@ -12,6 +12,9 @@ namespace Wop.Sdk;
 /// 线程安全（不可变）。</summary>
 public sealed class WopClient
 {
+    private static readonly object DefaultLock = new();
+    private static WopClient? _defaultClient;
+
     private readonly string _appKey;
     private readonly AlgorithmSuite _suite;
     private readonly AsymmetricKeyMaterial _merchantPrivate;
@@ -20,8 +23,9 @@ public sealed class WopClient
     private readonly Func<long> _clock;
     private readonly Func<string> _nonceGen;
     private readonly SecureRandom _random;
+    private readonly IWopTransport? _transport;
 
-    internal WopClient(WopClientBuilder b)
+    internal WopClient(WopClientBuilder b, IWopTransport? transport)
     {
         _appKey = b.AppKeyValue;
         // Build() 已完成全部前置校验（原子装配，I6），此处不再防御
@@ -32,6 +36,7 @@ public sealed class WopClient
         _clock = b.ClockValue;
         _nonceGen = b.NonceGenValue;
         _random = b.RandomValue;
+        _transport = transport;
     }
 
     /// <summary>已装配的算法套件（只读）。</summary>
@@ -39,6 +44,47 @@ public sealed class WopClient
 
     /// <summary>创建构建器。</summary>
     public static WopClientBuilder Builder() => new();
+
+    /// <summary>惰性：loadDefault → 传输发现 → 构造；缓存复用（K15）。</summary>
+    public static WopClient DefaultClient()
+    {
+        lock (DefaultLock)
+        {
+            if (_defaultClient == null)
+            {
+                _defaultClient = FromConfig(WopConfigLoader.LoadDefault());
+            }
+            return _defaultClient;
+        }
+    }
+
+    /// <summary>显式配置构造（不进默认实例缓存）。</summary>
+    public static WopClient FromConfig(WopSdkConfig config)
+    {
+        if (config == null)
+        {
+            throw new WopException(WopErrorCode.Config, "config 为空");
+        }
+        var transport = config.Transport
+                        ?? HttpClientTransport.Create(config.ServerRoot, config.HttpClient);
+        return Builder()
+            .AppKey(config.AppKey)
+            .Suite(config.Suite)
+            .MerchantPrivateKey(config.MerchantPrivateKey)
+            .PlatformPublicKey(config.PlatformPublicKey)
+            .ExpiredSeconds(config.ExpiredSeconds)
+            .GatewayBaseUrl(config.ServerRoot)
+            .Build(transport);
+    }
+
+    /// <summary>丢弃默认实例与初始化状态；轮换须先 <see cref="WopConfigLoader.ClearCache"/>（K26）。</summary>
+    public static void ResetDefault()
+    {
+        lock (DefaultLock)
+        {
+            _defaultClient = null;
+        }
+    }
 
     // ==================== 出向 ====================
 
@@ -53,10 +99,7 @@ public sealed class WopClient
         {
             throw new WopException(WopErrorCode.Config, "HTTP method 为空");
         }
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            throw new WopException(WopErrorCode.Config, "请求 path 为空");
-        }
+        ConfigValidator.ValidateApiPath(path ?? "");
         var hasBody = body is { Length: > 0 };
         if (level == SecurityLevel.L2 && !hasBody)
         {
@@ -149,6 +192,19 @@ public sealed class WopClient
         return Verify("POST", path, headers, body);
     }
 
+    /// <summary>一站式调用：BuildRequest → 内置 transport 发送 → 非 2xx 拦截 → VerifyResponse。</summary>
+    public VerifyResult Execute(string method, string path, byte[]? body, SecurityLevel level)
+    {
+        if (_transport == null)
+        {
+            throw new WopException(WopErrorCode.Config, "未配置传输层，请使用 FromConfig 或 DefaultClient");
+        }
+        var draft = BuildRequest(method, path, body, level);
+        var response = _transport.Send(draft);
+        EnsureSuccessStatus(response);
+        return Verify(draft.Method, draft.Path, response.Headers, response.Body);
+    }
+
     /// <summary>一站式调用：BuildRequest → transport 发送 → VerifyResponse（F6）。</summary>
     public (VerifyResult Result, TransportResponse Response) Execute(IWopTransport transport,
         string method, string path, byte[]? body, SecurityLevel level)
@@ -159,7 +215,18 @@ public sealed class WopClient
         }
         var draft = BuildRequest(method, path, body, level);
         var response = transport.Send(draft);
+        EnsureSuccessStatus(response);
         return (Verify(draft.Method, draft.Path, response.Headers, response.Body), response);
+    }
+
+    /// <summary>非 2xx 不进验签，抛网关响应异常（§7.5）。</summary>
+    private static void EnsureSuccessStatus(TransportResponse response)
+    {
+        if (response.StatusCode >= 200 && response.StatusCode < 300)
+        {
+            return;
+        }
+        throw new WopGatewayResponseException(response.StatusCode, response.Body);
     }
 
     /// <summary>验签统一入口：头名归一化（lowercase）后转 VerifyInbound；WopException → Fail。</summary>
@@ -365,7 +432,12 @@ public sealed class WopClientBuilder
     }
 
     /// <summary>构建客户端：套件原子装配 + 密钥格式/位数校验（错误均明确）。</summary>
-    public WopClient Build()
+    public WopClient Build() => BuildInternal(null);
+
+    /// <summary>构建客户端并绑定传输（配置层 FromConfig 使用）。</summary>
+    public WopClient Build(IWopTransport transport) => BuildInternal(transport);
+
+    private WopClient BuildInternal(IWopTransport? transport)
     {
         if (string.IsNullOrWhiteSpace(AppKeyValue))
         {
@@ -388,6 +460,6 @@ public sealed class WopClientBuilder
             throw new WopException(WopErrorCode.Protocol,
                 "expiredSeconds 超出允许范围 (0, " + WopSignProtocol.ExpiredSecondsMax + "]");
         }
-        return new WopClient(this);
+        return new WopClient(this, transport);
     }
 }

@@ -27,6 +27,13 @@
 
   <ItemGroup>
     <None Include="..\..\README.en.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\config\wopSdkConfigDefault.json" Pack="true" PackagePath="config\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="config\wopSdkConfig.json">
+      <LogicalName>config/wopSdkConfig.json</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <!-- 公共 API 快照门禁（wop-platform 统一纪律，对齐 wop-typescript-sdk api-extractor 模式）：
        RS0016（新增未声明）/RS0017（删除未声明）经 TreatWarningsAsErrors 升 error，CI 的
