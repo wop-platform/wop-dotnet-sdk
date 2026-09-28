@@ -43,5 +43,17 @@ public sealed class HttpClientSettings
         && MaxRetryCount == other.MaxRetryCount;
 
     /// <inheritdoc />
-    public override int GetHashCode() => HashCode.Combine(ConnectTimeout, ReadTimeout, MaxRetryCount);
+    // netstandard2.0 无 System.HashCode（2.1+ API），手写组合
+    /// <summary>手写哈希组合（netstandard2.0 无 System.HashCode）。</summary>
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            var h = 17;
+            h = h * 31 + ConnectTimeout.GetHashCode();
+            h = h * 31 + ReadTimeout.GetHashCode();
+            h = h * 31 + MaxRetryCount.GetHashCode();
+            return h;
+        }
+    }
 }

@@ -58,7 +58,7 @@ internal static class ConfigJsonParser
             dto.MerchantPrivateKey ?? "",
             dto.PlatformPublicKey ?? "",
             dto.ServerRoot ?? "",
-            dto.BackupServerRoots ?? Array.Empty<string>(),
+            dto.BackupServerRoots ?? new List<string>(),
             dto.ExpiredSeconds ?? WopSignProtocol.ExpiredSecondsDefault,
             http,
             null);
@@ -66,16 +66,19 @@ internal static class ConfigJsonParser
         return ConfigValidator.ValidateAndNormalize(raw);
     }
 
+    /// <summary>剥离 UTF-8 BOM（§4.3 容忍并剥离）。</summary>
     private static string StripBom(string text) =>
         text.StartsWith("\uFEFF", StringComparison.Ordinal) ? text.Substring(1) : text;
 
+    /// <summary>统一构造 configuration 异常（对外文案「配置…」，§3.4）。</summary>
     private static WopException Config(string message) =>
         new(WopErrorCode.Config, message);
 
     /// <summary>Utf8JsonReader 预扫对象键，遇重复键即 fail-fast（§4.4 K21）。</summary>
     private static class DuplicateKeyPrescanner
     {
-        internal static void Scan(ReadOnlySpan<byte> utf8Json)
+        /// <summary>Utf8JsonReader 预扫入口：重复键即 configuration（K21，§4.4）。</summary>
+    internal static void Scan(ReadOnlySpan<byte> utf8Json)
         {
             var reader = new Utf8JsonReader(utf8Json, new JsonReaderOptions
             {
@@ -89,7 +92,8 @@ internal static class ConfigJsonParser
             ScanObject(ref reader, nestedHttpClient: false);
         }
 
-        private static void ScanObject(ref Utf8JsonReader reader, bool nestedHttpClient)
+        /// <summary>对象帧扫描：记录已见键；httpClient 外再嵌对象即 configuration（§4.4）。</summary>
+    private static void ScanObject(ref Utf8JsonReader reader, bool nestedHttpClient)
         {
             var keys = new HashSet<string>(StringComparer.Ordinal);
             while (reader.Read())
@@ -134,7 +138,8 @@ internal static class ConfigJsonParser
             throw Config("配置文件 JSON 解析失败: 对象未闭合");
         }
 
-        private static void SkipValue(ref Utf8JsonReader reader)
+        /// <summary>跳过任意 JSON 值（未知字段忽略，§4.4）。</summary>
+    private static void SkipValue(ref Utf8JsonReader reader)
         {
             switch (reader.TokenType)
             {

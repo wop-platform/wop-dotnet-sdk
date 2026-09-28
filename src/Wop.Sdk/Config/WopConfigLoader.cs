@@ -63,6 +63,7 @@ public static class WopConfigLoader
         }
     }
 
+    /// <summary>以规范化位置为 key 的缓存读取（K13：无自动失效，clearCache 显式清）。</summary>
     private static WopSdkConfig LoadCached(string key, Func<string> supplier)
     {
         lock (CacheLock)
@@ -77,6 +78,7 @@ public static class WopConfigLoader
         }
     }
 
+    /// <summary>§4.2 六来源发现顺序：显式 env 优先，全部未命中报候选清单。</summary>
     private static DiscoveryResult Discover()
     {
         var overridePath = Environment.GetEnvironmentVariable(ConfigFileEnvOverride);
@@ -110,6 +112,7 @@ public static class WopConfigLoader
         return DiscoveryResult.Embedded(PackagedConfig);
     }
 
+    /// <summary>读文件（UTF-8 剥 BOM，空文件报错，§4.3）。</summary>
     private static string ReadFile(FileInfo file, bool explicitPath)
     {
         if (!file.Exists)
@@ -127,6 +130,7 @@ public static class WopConfigLoader
         }
     }
 
+    /// <summary>读打包资源（K6 兜底来源）。</summary>
     private static string ReadEmbedded(string resourceName)
     {
         var assembly = typeof(WopConfigLoader).GetTypeInfo().Assembly;
@@ -163,10 +167,12 @@ public static class WopConfigLoader
             ExplicitPath = explicitPath;
         }
 
-        internal static DiscoveryResult File(FileInfo file, bool explicitPath) =>
+        /// <summary>构造文件来源候选（显式指定不可读即不容忍，§4.2）。</summary>
+    internal static DiscoveryResult File(FileInfo file, bool explicitPath) =>
             new("file:" + file.FullName, () => ReadFile(file, explicitPath), explicitPath);
 
-        internal static DiscoveryResult Embedded(string resource) =>
+        /// <summary>构造打包资源候选（兜底，命中即用）。</summary>
+    internal static DiscoveryResult Embedded(string resource) =>
             new(EmbeddedPrefix + resource, () => ReadEmbedded(resource), false);
 
         internal string ReadUtf8() => _reader();

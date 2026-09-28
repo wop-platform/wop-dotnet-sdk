@@ -21,17 +21,18 @@ public class WopConfigLoaderTests
         return path;
     }
 
-    static string ValidConfigJson(string? serverRoot = null) =>
-        """
-        {
-          "appKey": "demo-app",
-          "suite": "WOP-RSA3072-SHA256",
-          "merchantPrivateKey": """ + JsonSerializer.Serialize(K("rsa3072", "privatePkcs8B64")) + """,
-          "platformPublicKey": """ + JsonSerializer.Serialize(K("rsa3072", "publicSpkiB64")) + """,
-          "serverRoot": """ + JsonSerializer.Serialize(serverRoot ?? "https://gw.example.com/gateway") + """,
-          "expiredSeconds": 1800
-        }
-        """;
+    static string ValidConfigJson(string? serverRoot = null)
+    {
+        // 普通拼接而非 raw string：JSON 花括号与 raw 定界符交错会被截断（P0 遗留语法破损）
+        return "{\n" +
+            "  \"appKey\": \"demo-app\",\n" +
+            "  \"suite\": \"WOP-RSA3072-SHA256\",\n" +
+            "  \"merchantPrivateKey\": " + JsonSerializer.Serialize(K("rsa3072", "privatePkcs8B64")) + ",\n" +
+            "  \"platformPublicKey\": " + JsonSerializer.Serialize(K("rsa3072", "publicSpkiB64")) + ",\n" +
+            "  \"serverRoot\": " + JsonSerializer.Serialize(serverRoot ?? "https://gw.example.com/gateway") + ",\n" +
+            "  \"expiredSeconds\": 1800\n" +
+            "}";
+    }
 
     [Fact]
     public void Load_合法配置_解析成功()

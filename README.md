@@ -13,7 +13,7 @@ content-digest、L2 数字信封、验签解密）与 HttpClient 适配层，商
 
 - 目标框架：`net8.0` + `netstandard2.0`（多目标）
 - 密码依赖（唯一指定路径，E5）：[BouncyCastle.Cryptography](https://www.nuget.org/packages/BouncyCastle.Cryptography)（Portable.BouncyCastle 后继包）
-- 算法套件（F1）：`WOP-RSA3072-SHA256` / `WOP-RSA4096-SHA256` / `WOP-SM2-SM3`（国密双套件全支持）
+- 算法套件（F1）：`WOP-RSA2048-SHA256` / `WOP-RSA3072-SHA256` / `WOP-RSA4096-SHA256` / `WOP-SM2-SM3`（国密双套件全支持）
 - 协议真源：[crypto-strategy-spec.md](https://github.com/wop-platform/wop-specs/blob/main/crypto/crypto-strategy-spec.md)（v0.3-reviewed）+ [wop-sdk-spec.md](https://github.com/wop-platform/wop-specs/blob/main/sdk/wop-sdk-spec.md)（v1.0-ratified）
 - 向量真源：[crypto-vectors.json](https://github.com/wop-platform/wop-specs/blob/main/crypto/crypto-vectors.json)（本仓 fixture 为字节级副本，禁手改）
 
@@ -57,6 +57,7 @@ if (result.Ok)
 
 | 套件 | 商户私钥 | 平台公钥 |
 |------|----------|----------|
+| `WOP-RSA2048-SHA256` | PKCS#8 DER（Base64/PEM），2048 位 | X.509 SubjectPublicKeyInfo DER（Base64/PEM） |
 | `WOP-RSA3072-SHA256` | PKCS#8 DER（Base64/PEM），3072 位 | X.509 SubjectPublicKeyInfo DER（Base64/PEM） |
 | `WOP-RSA4096-SHA256` | PKCS#8 DER，4096 位 | SPKI DER |
 | `WOP-SM2-SM3` | d = 32 字节大端标量（Base64，范围 [1, n-1]） | 未压缩点 `04‖X‖Y` 共 65 字节（Base64，on-curve 校验前置） |

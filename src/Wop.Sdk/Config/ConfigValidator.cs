@@ -135,7 +135,8 @@ internal static class ConfigValidator
         {
             throw Config("path 不得 // 开头: " + path);
         }
-        if (path.Contains('?') || path.Contains('#'))
+        // netstandard2.0 无 Contains(string, StringComparison) 重载，用 IndexOf 等价判定
+        if (path.IndexOf("?", StringComparison.Ordinal) >= 0 || path.IndexOf("#", StringComparison.Ordinal) >= 0)
         {
             throw Config("path 不得含 query 或 fragment: " + path);
         }
@@ -157,6 +158,7 @@ internal static class ConfigValidator
         return root + trimmedPath;
     }
 
+    /// <summary>统一构造 configuration 异常（消息含字段名，§3.4）。</summary>
     private static WopException Config(string message) =>
         new(WopErrorCode.Config, message);
 }
