@@ -284,4 +284,21 @@ public class WopConfigLoaderTests
             WopClient.ResetDefault();
         }
     }
+
+    [Fact]
+    public void Load_成员间缺逗号_解析失败拒绝()
+    {
+        var json = "{\"appKey\": \"a\" \"suite\": \"WOP-RSA3072-SHA256\"}";
+        var path = WriteTempConfig(json);
+        var ex = Assert.Throws<WopException>(() => WopConfigLoader.Load(path));
+        Assert.Contains("配置文件 JSON 解析失败", ex.Message);
+    }
+
+    [Fact]
+    public void Load_根对象后尾随内容_解析失败拒绝()
+    {
+        var path = WriteTempConfig(ValidConfigJson() + "garbage");
+        var ex = Assert.Throws<WopException>(() => WopConfigLoader.Load(path));
+        Assert.Contains("配置文件 JSON 解析失败", ex.Message);
+    }
 }

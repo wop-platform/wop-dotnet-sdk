@@ -32,7 +32,15 @@ internal static class ConfigJsonParser
         }
 
         var utf8 = Encoding.UTF8.GetBytes(trimmed);
-        DuplicateKeyPrescanner.Scan(utf8);
+        try
+        {
+            DuplicateKeyPrescanner.Scan(utf8);
+        }
+        catch (JsonException e)
+        {
+            // 预扫同样可能遇畸形 JSON（缺逗号等）——与 Deserialize 同口径归一为 configuration
+            throw Config("配置文件 JSON 解析失败: " + e.Message);
+        }
 
         WopSdkConfigJson dto;
         try
