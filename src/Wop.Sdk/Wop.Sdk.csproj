@@ -54,7 +54,7 @@
     <PackageReference Include="System.Memory" Version="4.6.3" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
     <!-- 配置层 ConfigJsonParser 使用 Utf8JsonReader/JsonSerializer（K8）；net8.0 内置于框架，
          netstandard2.0 需显式引用（P0 配置层此前缺失，分支无法编译） -->
-    <PackageReference Include="System.Text.Json" Version="8.0.5" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+    <PackageReference Include="System.Text.Json" Version="10.0.14" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
   </ItemGroup>
 
 </Project>
