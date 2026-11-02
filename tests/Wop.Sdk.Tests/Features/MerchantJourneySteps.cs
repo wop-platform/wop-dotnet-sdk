@@ -441,3 +441,10 @@ public sealed class MerchantJourneySteps
         public TransportResponse Send(RequestDraft draft) => _response;
     }
 }
+
+namespace Wop.Sdk.Tests.Features
+{
+    // 与 ReqIdGeneratorCollection 同集合：RequestId.Generator 是进程级全局态，须与 RequestIdTests 串行
+    [Collection("reqid-generator")]
+    public partial class WOP商户接入网关全旅程Feature { }
+}
