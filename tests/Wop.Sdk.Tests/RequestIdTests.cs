@@ -8,6 +8,11 @@ using System.Text.RegularExpressions;
 using Wop.Sdk;
 using Xunit;
 
+// 全旅程步骤会临时改写进程级 RequestId.Generator（finally 还原），与本案并发即读到固定值
+[CollectionDefinition("reqid-generator", DisableParallelization = true)]
+public class ReqIdGeneratorCollection { }
+
+[Collection("reqid-generator")]
 public class RequestIdTests
 {
     static readonly Lazy<JsonElement> Vectors = new(() =>
