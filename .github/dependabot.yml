@@ -9,6 +9,11 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - dependencies
+    ignore:
+      # System.Text.Json 主版本升级对 netstandard2.0 消费者是硬破坏（NU1605 降级错误，见 #53）：
+      # 8.0.x 走 patch 升级；跨主版本须按 breaking 发布单独裁决
+      - dependency-name: "System.Text.Json"
+        update-types: ["version-update:semver-major"]
 
   # CI/发版工作流自身依赖（actions/checkout、setup-dotnet 等）
   - package-ecosystem: github-actions
