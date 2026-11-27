@@ -263,7 +263,7 @@ public class VectorConformanceTests
         Assert.True(sm2.MatchesSuite(Suite("WOP-SM2-SM3")));
     }
 
-    // ==================== formatRules（8 条全量） ====================
+    // ==================== formatRules（12 条全量） ====================
 
     [Fact]
     public void FormatRules_全量()
@@ -276,11 +276,13 @@ public class VectorConformanceTests
             var suiteReq = "formatRules." + i + ".suite";
             var suite = ElementExists(suiteReq) ? Suite(Vec(suiteReq)) : null;
 
+            var accepted = false;
             switch (id)
             {
                 case "header-rsa-ok":
                 case "header-sm2-ok":
                     ContentDigest.ValidateHeader(suite!, value);
+                    accepted = true;
                     break;
                 case "header-crossfamily":   // I5 跨族
                 case "header-double-space":  // D2 恰一空格
@@ -296,14 +298,16 @@ public class VectorConformanceTests
                     break;
                 case "b64url-trailing-bits-canonical-2":
                     Assert.Equal(new byte[] { 0x00 }, Codec.DecodeB64Url(value));
+                    accepted = true;
                     break;
                 case "b64url-trailing-bits-canonical-3":
                     Assert.Equal(new byte[] { 0x4D, 0x61 }, Codec.DecodeB64Url(value));   // "Ma"
+                    accepted = true;
                     break;
                 default:
                     throw new Xunit.Sdk.XunitException("未预期 formatRules 向量 " + id);
             }
-            Assert.Equal(expect, expect); // 向量自述与消费一致（哨兵）
+            Assert.Equal(expect, accepted ? "accept" : "reject"); // 向量自述与消费一致（哨兵）
         }
     }
 
